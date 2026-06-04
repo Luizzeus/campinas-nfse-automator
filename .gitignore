@@ -1,0 +1,19 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Database (contains sensitive client & portal credentials)
+database.db
+
+# Generated reports & invoices
+invoices/
+reports/
+screenshots/
+
+# Environment files
+.env
+venv/
+.venv/
+env/

@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Specchio NFS-e Automator - Painel de Controle</title>
+    <!-- Google Fonts Inter & Material Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <link rel="stylesheet" href="/static/index.css">
+</head>
+<body>
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar glass-panel">
+            <div class="brand">
+                <span class="material-icons-round brand-icon">auto_awesome</span>
+                <h1>Specchio</h1>
+                <p>NFS-e Automator</p>
+            </div>
+            
+            <nav class="nav-menu">
+                <button class="nav-item active" data-tab="dashboard" id="tab-btn-dashboard">
+                    <span class="material-icons-round">dashboard</span>
+                    Dashboard
+                </button>
+                <button class="nav-item" data-tab="history" id="tab-btn-history">
+                    <span class="material-icons-round">history</span>
+                    Histórico & Relatórios
+                </button>
+                <button class="nav-item" data-tab="clients" id="tab-btn-clients">
+                    <span class="material-icons-round">people</span>
+                    Gerenciar Clientes
+                </button>
+                <button class="nav-item" data-tab="config" id="tab-btn-config">
+                    <span class="material-icons-round">settings</span>
+                    Configurações
+                </button>
+            </nav>
+            
+            <div class="system-status">
+                <div class="status-indicator online"></div>
+                <span id="ws-status-text">Conectado ao Servidor</span>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            
+            <!-- TAB 1: DASHBOARD -->
+            <section id="tab-dashboard" class="tab-content active">
+                <header class="content-header">
+                    <div>
+                        <h2>Painel de Emissões</h2>
+                        <p>Selecione os clientes para emissão em lote de notas fiscais.</p>
+                    </div>
+                </header>
+                
+                <div class="dashboard-grid">
+                    <!-- Left: Clients selection table -->
+                    <div class="glass-panel main-panel">
+                        <div class="panel-header">
+                            <h3>Clientes Ativos</h3>
+                            <div class="panel-actions">
+                                <label for="run-ref-date" class="date-label">Mês de Referência (Execução):</label>
+                                <input type="date" id="run-ref-date" class="input-field date-input">
+                            </div>
+                        </div>
+                        
+                        <div class="table-container">
+                            <table class="data-table" id="emissions-clients-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 40px;"><input type="checkbox" id="select-all-clients"></th>
+                                        <th>Cliente</th>
+                                        <th>CNPJ/CPF</th>
+                                        <th>Valor Nota</th>
+                                        <th>Retenção</th>
+                                        <th>Nota Ref.</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="clients-emissions-list">
+                                    <!-- Rendered dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="panel-footer">
+                            <div class="selection-summary">
+                                <span id="selected-count">0</span> de <span id="total-count">0</span> clientes selecionados
+                            </div>
+                            <button class="btn btn-primary" id="btn-start-automation">
+                                <span class="material-icons-round">play_arrow</span>
+                                Iniciar Automação
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right: Real-time Terminal Logs -->
+                    <div class="glass-panel log-panel">
+                        <div class="panel-header">
+                            <h3>Logs em Tempo Real</h3>
+                            <button class="btn btn-icon" id="btn-clear-logs" title="Limpar terminal">
+                                <span class="material-icons-round">delete_sweep</span>
+                            </button>
+                        </div>
+                        
+                        <div class="terminal-container">
+                            <div class="terminal-body" id="terminal-log-output">
+                                <div class="log-line info">
+                                    <span class="log-time">[14:20:00]</span> Painel inicializado. Aguardando execução...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: HISTORY & REPORTS -->
+            <section id="tab-history" class="tab-content">
+                <header class="content-header">
+                    <div>
+                        <h2>Histórico de Emissões & Relatórios</h2>
+                        <p>Visualize as emissões passadas, baixe PDFs de notas fiscais e relatórios gerados.</p>
+                    </div>
+                </header>
+                
+                <div class="split-grid">
+                    <!-- Left: Emissions table history -->
+                    <div class="glass-panel main-panel">
+                        <div class="panel-header">
+                            <h3>Histórico de Notas</h3>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Data/Hora</th>
+                                        <th>Cliente</th>
+                                        <th>Competência</th>
+                                        <th>Status</th>
+                                        <th>Nota Nº</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="emissions-history-list">
+                                    <!-- Rendered dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Right: Reports list and PDF generation -->
+                    <div class="glass-panel side-panel">
+                        <div class="panel-header">
+                            <h3>Relatórios Consolidados</h3>
+                        </div>
+                        
+                        <div class="report-generator-box">
+                            <label for="report-competence-input">Competência (MM/AAAA):</label>
+                            <div class="inline-actions">
+                                <input type="text" id="report-competence-input" class="input-field" placeholder="Ex: 05/2026">
+                                <button class="btn btn-primary" id="btn-generate-report">
+                                    <span class="material-icons-round">picture_as_pdf</span>
+                                    Gerar
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="report-list-container">
+                            <ul class="report-list" id="reports-list">
+                                <!-- Rendered dynamically -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: CLIENTS MANAGEMENT -->
+            <section id="tab-clients" class="tab-content">
+                <header class="content-header">
+                    <div>
+                        <h2>Gerenciamento de Clientes</h2>
+                        <p>Cadastre, edite ou remova clientes da base de faturamento.</p>
+                    </div>
+                    <button class="btn btn-primary" id="btn-add-client">
+                        <span class="material-icons-round">person_add</span>
+                        Novo Cliente
+                    </button>
+                </header>
+                
+                <div class="glass-panel">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>CNPJ/CPF</th>
+                                    <th>Valor Nota (R$)</th>
+                                    <th>Valor Boleto (R$)</th>
+                                    <th>Nota Ref.</th>
+                                    <th>Retenção</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clients-crud-list">
+                                <!-- Rendered dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 4: SYSTEM CONFIG -->
+            <section id="tab-config" class="tab-content">
+                <header class="content-header">
+                    <div>
+                        <h2>Configurações do Sistema</h2>
+                        <p>Configure as credenciais de acesso ao portal e comportamentos do navegador.</p>
+                    </div>
+                </header>
+                
+                <div class="glass-panel config-panel-container">
+                    <form id="config-form" class="config-form">
+                        <div class="form-group">
+                            <label for="config-cnpj">CNPJ do Prestador (Portal):</label>
+                            <input type="text" id="config-cnpj" class="input-field" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="config-password">Senha do Portal:</label>
+                            <input type="password" id="config-password" class="input-field" required>
+                        </div>
+                        
+                        <div class="form-group check-group">
+                            <input type="checkbox" id="config-headless">
+                            <label for="config-headless">Executar navegador em modo oculto (headless)</label>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary" id="btn-save-config">
+                            <span class="material-icons-round">save</span>
+                            Salvar Configurações
+                        </button>
+                    </form>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- CLIENT MODAL FOR CRUD -->
+    <div class="modal-backdrop" id="client-modal">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h3 id="modal-title">Novo Cliente</h3>
+                <button class="btn-close" id="btn-close-modal">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            
+            <form id="client-form">
+                <input type="hidden" id="client-id">
+                
+                <div class="modal-body-grid">
+                    <div class="form-group">
+                        <label for="client-name">Nome do Cliente:</label>
+                        <input type="text" id="client-name" class="input-field" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="client-cnpj">CNPJ ou CPF:</label>
+                        <input type="text" id="client-cnpj" class="input-field" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="client-invoice-val">Valor da Nota Fiscal (R$):</label>
+                        <input type="number" step="0.01" id="client-invoice-val" class="input-field" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="client-billing-val">Valor do Boleto (R$):</label>
+                        <input type="number" step="0.01" id="client-billing-val" class="input-field" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="client-ref-note">Nota de Referência para Clonagem:</label>
+                        <input type="text" id="client-ref-note" class="input-field" placeholder="Ex: 2973">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="client-retention">Tipo de Retenção:</label>
+                        <select id="client-retention" class="input-field" required>
+                            <option value="Sem retenção">Sem retenção</option>
+                            <option value="ISSQN Retido">ISSQN Retido</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group full-width">
+                        <label for="client-email">E-mails de Contato (separe por vírgula ou ponto e vírgula):</label>
+                        <input type="text" id="client-email" class="input-field" placeholder="exemplo1@email.com, exemplo2@email.com">
+                    </div>
+                    
+                    <div class="form-group full-width">
+                        <label for="client-desc-template">Template da Descrição da NFS-e:</label>
+                        <textarea id="client-desc-template" class="input-field textarea-field" required rows="4"></textarea>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="btn-cancel-modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Cliente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/index.js?v=3"></script>
+</body>
+</html>
