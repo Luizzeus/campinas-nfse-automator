@@ -28,19 +28,25 @@
             <nav class="nav-menu">
                 <button class="nav-item active" data-tab="dashboard" id="tab-btn-dashboard">
                     <span class="material-icons-round">dashboard</span>
-                    Dashboard
+                    <span class="nav-text">Dashboard</span>
                 </button>
                 <button class="nav-item" data-tab="history" id="tab-btn-history">
                     <span class="material-icons-round">history</span>
-                    Histórico & Relatórios
+                    <span class="nav-text">Histórico & Relatórios</span>
+                </button>
+                <button class="nav-item nav-item-billing" data-tab="billing-emails" id="tab-btn-billing-emails">
+                    <span class="billing-menu-label">
+                        <span class="material-icons-round billing-menu-icon">outgoing_mail</span>
+                        <span class="billing-menu-text">Envio de Faturamento</span>
+                    </span>
                 </button>
                 <button class="nav-item" data-tab="clients" id="tab-btn-clients">
                     <span class="material-icons-round">people</span>
-                    Gerenciar Clientes
+                    <span class="nav-text">Gerenciar Clientes</span>
                 </button>
                 <button class="nav-item" data-tab="config" id="tab-btn-config">
                     <span class="material-icons-round">settings</span>
-                    Configurações
+                    <span class="nav-text">Configurações</span>
                 </button>
             </nav>
             
@@ -182,7 +188,78 @@
                 </div>
             </section>
 
-            <!-- TAB 3: CLIENTS MANAGEMENT -->
+            <!-- TAB 3: BILLING EMAILS -->
+            <section id="tab-billing-emails" class="tab-content">
+                <header class="content-header">
+                    <div>
+                        <h2>Envio de E-mails de Faturamento</h2>
+                        <p>Envie notas fiscais emitidas e boletos aos clientes, com validação de anexos e controle de duplicidade.</p>
+                    </div>
+                </header>
+
+                <div class="glass-panel main-panel">
+                    <div class="panel-header billing-toolbar">
+                        <div class="panel-actions">
+                            <label for="billing-email-competence" class="date-label">Competência:</label>
+                            <input type="text" id="billing-email-competence" class="input-field" placeholder="MM/AAAA">
+                            <button class="btn btn-secondary" id="btn-refresh-billing-emails">
+                                <span class="material-icons-round">refresh</span>
+                                Atualizar
+                            </button>
+                            <button class="btn btn-secondary" id="btn-verify-boletos">
+                                <span class="material-icons-round">fact_check</span>
+                                Verificar boletos
+                            </button>
+                        </div>
+                        <div class="panel-actions billing-actions">
+                            <button class="btn btn-primary" id="btn-send-selected-emails">
+                                <span class="material-icons-round">send</span>
+                                Enviar selecionados
+                            </button>
+                            <button class="btn btn-secondary" id="btn-send-all-emails">
+                                <span class="material-icons-round">forward_to_inbox</span>
+                                Enviar para todos
+                            </button>
+                            <button class="btn btn-secondary" id="btn-reprocess-email-errors">
+                                <span class="material-icons-round">restart_alt</span>
+                                Reprocessar erros
+                            </button>
+                            <button class="btn btn-secondary" id="btn-generate-billing-email-report">
+                                <span class="material-icons-round">picture_as_pdf</span>
+                                Gerar relatório PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="data-table billing-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px;"><input type="checkbox" id="select-all-billing-emails"></th>
+                                    <th>Cliente</th>
+                                    <th>Nota emitida</th>
+                                    <th>PDF encontrado</th>
+                                    <th>Boleto encontrado</th>
+                                    <th>E-mail enviado</th>
+                                    <th>Erro no envio</th>
+                                    <th>Destinatários</th>
+                                </tr>
+                            </thead>
+                            <tbody id="billing-emails-list">
+                                <!-- Rendered dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="panel-footer">
+                        <div class="selection-summary">
+                            <span id="selected-billing-email-count">0</span> de <span id="total-billing-email-count">0</span> clientes selecionados para envio
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 4: CLIENTS MANAGEMENT -->
             <section id="tab-clients" class="tab-content">
                 <header class="content-header">
                     <div>
@@ -217,7 +294,7 @@
                 </div>
             </section>
 
-            <!-- TAB 4: SYSTEM CONFIG -->
+            <!-- TAB 5: SYSTEM CONFIG -->
             <section id="tab-config" class="tab-content">
                 <header class="content-header">
                     <div>
@@ -304,6 +381,11 @@
                         <label for="client-email">E-mails de Contato (separe por vírgula ou ponto e vírgula):</label>
                         <input type="text" id="client-email" class="input-field" placeholder="exemplo1@email.com, exemplo2@email.com">
                     </div>
+
+                    <div class="form-group check-group full-width">
+                        <input type="checkbox" id="client-requires-boleto" checked>
+                        <label for="client-requires-boleto">Exigir boleto para envio de faturamento</label>
+                    </div>
                     
                     <div class="form-group full-width">
                         <label for="client-desc-template">Template da Descrição da NFS-e:</label>
@@ -319,6 +401,6 @@
         </div>
     </div>
 
-    <script src="/static/index.js?v=3"></script>
+    <script src="/static/index.js?v=11"></script>
 </body>
 </html>

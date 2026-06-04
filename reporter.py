@@ -1,6 +1,6 @@
 import os
 import datetime
-from reportlab.lib.pagesizes import letter
+from reportlab.lib.pagesizes import letter, landscape
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
@@ -80,13 +80,31 @@ def generate_pdf_report(competence):
             c.cnpj_cpf as client_cnpj,
             c.invoice_value,
             c.boleto_value,
-            c.retention_type
+            c.retention_type,
+            c.requires_boleto,
+            es.emails_sent,
+            es.invoice_pdf_path as email_invoice_pdf_path,
+            es.boleto_pdf_path,
+            es.boleto_due_date,
+            es.boleto_value as email_boleto_value,
+            es.status as email_status,
+            es.sent_at as email_sent_at,
+            es.error_message as email_error_message
         FROM emissions e
         JOIN clients c ON e.client_id = c.id
+        LEFT JOIN email_sends es
+          ON es.client_id = e.client_id
+         AND es.competence = e.competence
         WHERE e.competence = ?
           AND e.status = 'emitida'
+          AND e.id IN (
+              SELECT MAX(id)
+              FROM emissions
+              WHERE competence = ? AND status = 'emitida'
+              GROUP BY client_id
+          )
         ORDER BY c.name ASC
-    """, (competence,))
+    """, (competence, competence))
     emissions = [dict(row) for row in cursor.fetchall()]
     conn.close()
     
@@ -103,7 +121,7 @@ def generate_pdf_report(competence):
     # Margins: 0.75 in (54 pt)
     doc = SimpleDocTemplate(
         report_path,
-        pagesize=letter,
+        pagesize=landscape(letter),
         leftMargin=54,
         rightMargin=54,
         topMargin=54,
@@ -153,8 +171,8 @@ def generate_pdf_report(competence):
         'TableCell',
         parent=styles['Normal'],
         fontName='Helvetica',
-        fontSize=9,
-        leading=12,
+        fontSize=7,
+        leading=9,
         textColor=colors.HexColor("#2D3748")
     )
     
@@ -245,51 +263,54 @@ def generate_pdf_report(competence):
     table_data = [[
         Paragraph("<b>Cliente</b>", cell_bold_style),
         Paragraph("<b>CNPJ/CPF</b>", cell_bold_style),
-        Paragraph("<b>Nota (R$)</b>", cell_bold_style),
-        Paragraph("<b>Boleto (R$)</b>", cell_bold_style),
-        Paragraph("<b>Status</b>", cell_bold_style),
         Paragraph("<b>Nota Nº</b>", cell_bold_style),
-        Paragraph("<b>Retorno / Erro</b>", cell_bold_style)
+        Paragraph("<b>Valor Nota</b>", cell_bold_style),
+        Paragraph("<b>Valor Boleto</b>", cell_bold_style),
+        Paragraph("<b>Venc.</b>", cell_bold_style),
+        Paragraph("<b>E-mails enviados</b>", cell_bold_style),
+        Paragraph("<b>Arquivo NF</b>", cell_bold_style),
+        Paragraph("<b>Arquivo Boleto</b>", cell_bold_style),
+        Paragraph("<b>Status Envio</b>", cell_bold_style),
+        Paragraph("<b>Data/Hora</b>", cell_bold_style),
+        Paragraph("<b>Erro</b>", cell_bold_style)
     ]]
     
     # Table Rows
     for e in emissions:
-        if e["status"] == "emitida":
-            status_text = "EMITIDA"
-            status_p_style = cell_success_style
-        elif e["status"] == "pendente":
-            status_text = "PENDENTE"
-            status_p_style = cell_style
-        else:
-            status_text = "ERRO"
-            status_p_style = cell_error_style
-        
         val_str = f"R$ {e['invoice_value']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-        boleto_str = f"R$ {e['boleto_value']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-        
-        err_msg = e["error_message"] or ""
-        if len(err_msg) > 60:
-            err_msg = err_msg[:57] + "..."
-            
+        boleto_value = e['email_boleto_value'] if e['email_boleto_value'] is not None else e['boleto_value']
+        boleto_str = f"R$ {boleto_value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        email_status = (e["email_status"] or "pendente").upper()
+        status_style = cell_success_style if email_status == "ENVIADO" else cell_error_style if email_status == "ERRO" else cell_style
+        err_msg = e["email_error_message"] or e["error_message"] or ""
+        if len(err_msg) > 120:
+            err_msg = err_msg[:117] + "..."
+        invoice_file = os.path.basename(e["email_invoice_pdf_path"] or e["pdf_path"] or "") or "-"
+        boleto_file = os.path.basename(e["boleto_pdf_path"] or "") or ("Dispensado" if not e["requires_boleto"] else "-")
         table_data.append([
             Paragraph(e["client_name"], cell_style),
             Paragraph(e["client_cnpj"], cell_style),
+            Paragraph(str(e["invoice_number"] or "-"), cell_style),
             Paragraph(val_str, cell_style),
             Paragraph(boleto_str, cell_style),
-            Paragraph(status_text, status_p_style),
-            Paragraph(str(e["invoice_number"] or "-"), cell_style),
-            Paragraph(err_msg or "Sucesso", cell_style)
+            Paragraph(e["boleto_due_date"] or ("Dispensado" if not e["requires_boleto"] else "-"), cell_style),
+            Paragraph(e["emails_sent"] or "-", cell_style),
+            Paragraph(invoice_file, cell_style),
+            Paragraph(boleto_file, cell_style),
+            Paragraph(email_status, status_style),
+            Paragraph(e["email_sent_at"] or "-", cell_style),
+            Paragraph(err_msg or "-", cell_style)
         ])
         
     # If no emissions found
     if len(emissions) == 0:
         table_data.append([
             Paragraph("Nenhuma emissão registrada para esta competência.", cell_style),
-            "", "", "", "", "", ""
+            "", "", "", "", "", "", "", "", "", "", ""
         ])
     
-    # Col Widths must sum up to 504 pt (Letter width 612 - 108 margin)
-    det_table = Table(table_data, colWidths=[112, 78, 62, 62, 54, 45, 91])
+    # Col widths sum up to 684 pt (landscape Letter width 792 - 108 margin)
+    det_table = Table(table_data, colWidths=[70, 60, 38, 48, 48, 44, 92, 78, 78, 50, 58, 120])
     
     # Detailed Table Styling
     det_table_style = [

@@ -132,9 +132,13 @@ body {
 }
 
 .nav-item {
-    display: flex;
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr);
     align-items: center;
-    gap: 12px;
+    justify-items: start;
+    column-gap: 12px;
+    width: 100%;
+    min-height: 44px;
     background: transparent;
     border: none;
     color: var(--text-muted);
@@ -145,6 +149,9 @@ body {
     border-radius: 10px;
     cursor: pointer;
     text-align: left;
+    line-height: 20px;
+    white-space: nowrap;
+    overflow: hidden;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -160,8 +167,52 @@ body {
     font-weight: 600;
 }
 
-.nav-item span {
+.nav-item .material-icons-round {
+    width: 20px;
     font-size: 20px;
+    text-align: center;
+}
+
+.nav-text {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.nav-item-billing {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.billing-menu-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    width: 100%;
+    min-width: 0;
+    text-align: left;
+}
+
+.billing-menu-icon {
+    order: 0;
+    flex: 0 0 20px;
+    width: 20px;
+    font-size: 20px;
+    text-align: center;
+}
+
+.billing-menu-text {
+    order: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: left;
 }
 
 .system-status {
@@ -619,6 +670,36 @@ input[type="checkbox"]:checked::before {
     color: var(--text-muted);
 }
 
+
+/* Billing e-mail module */
+.billing-toolbar {
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.billing-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.billing-table th,
+.billing-table td {
+    vertical-align: top;
+}
+
+.billing-table td:nth-child(7),
+.billing-table td:nth-child(8) {
+    max-width: 260px;
+    white-space: normal;
+    word-break: break-word;
+}
+
+.muted-small {
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 500;
+}
+
 /* Configurations Form Layout */
 .config-panel-container {
     max-width: 600px;
@@ -792,5 +873,11 @@ input[type="checkbox"]:checked::before {
     }
     .split-grid {
         grid-template-columns: 1fr;
+    }
+    .billing-toolbar {
+        flex-direction: column;
+    }
+    .billing-actions {
+        justify-content: flex-start;
     }
 }

@@ -3,6 +3,8 @@ let clients = [];
 let selectedClients = new Set();
 let emissionsHistory = [];
 let reportsList = [];
+let billingEmailItems = [];
+let selectedBillingEmailClients = new Set();
 let ws = null;
 let refreshTimer = null;
 
@@ -28,6 +30,19 @@ const reportsListEl = document.getElementById('reports-list');
 const reportCompetenceInput = document.getElementById('report-competence-input');
 const btnGenerateReport = document.getElementById('btn-generate-report');
 
+// Billing Emails Tab Elements
+const billingEmailCompetenceInput = document.getElementById('billing-email-competence');
+const billingEmailsList = document.getElementById('billing-emails-list');
+const selectAllBillingEmailsCheckbox = document.getElementById('select-all-billing-emails');
+const selectedBillingEmailCountEl = document.getElementById('selected-billing-email-count');
+const totalBillingEmailCountEl = document.getElementById('total-billing-email-count');
+const btnRefreshBillingEmails = document.getElementById('btn-refresh-billing-emails');
+const btnVerifyBoletos = document.getElementById('btn-verify-boletos');
+const btnSendSelectedEmails = document.getElementById('btn-send-selected-emails');
+const btnSendAllEmails = document.getElementById('btn-send-all-emails');
+const btnReprocessEmailErrors = document.getElementById('btn-reprocess-email-errors');
+const btnGenerateBillingEmailReport = document.getElementById('btn-generate-billing-email-report');
+
 // Clients Tab Elements
 const clientsCrudList = document.getElementById('clients-crud-list');
 const btnAddClient = document.getElementById('btn-add-client');
@@ -52,6 +67,7 @@ const clientBillingValInput = document.getElementById('client-billing-val');
 const clientRefNoteInput = document.getElementById('client-ref-note');
 const clientRetentionSelect = document.getElementById('client-retention');
 const clientEmailInput = document.getElementById('client-email');
+const clientRequiresBoletoInput = document.getElementById('client-requires-boleto');
 const clientDescTemplateInput = document.getElementById('client-desc-template');
 
 // Initialize App
@@ -66,6 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const yyyy = d.getFullYear();
     reportCompetenceInput.value = `${mm}/${yyyy}`;
+    billingEmailCompetenceInput.value = `${mm}/${yyyy}`;
 
     initTabNavigation();
     initWebSocket();
@@ -73,7 +90,9 @@ document.addEventListener('DOMContentLoaded', () => {
     loadConfig();
     loadEmissionsHistory();
     loadReportsList();
+    loadBillingEmails();
     loadCrudClients();
+    initBillingEmailEvents();
     initModalEvents();
     
     // Clear logs button event
@@ -104,6 +123,8 @@ function initTabNavigation() {
             if (tabId === 'history') {
                 loadEmissionsHistory();
                 loadReportsList();
+            } else if (tabId === 'billing-emails') {
+                loadBillingEmails();
             } else if (tabId === 'clients') {
                 loadCrudClients();
             } else if (tabId === 'dashboard') {
@@ -165,6 +186,7 @@ function scheduleUiRefresh() {
         loadDashboardClients();
         loadEmissionsHistory();
         loadReportsList();
+        loadBillingEmails();
     }, 700);
 }
 
@@ -537,6 +559,245 @@ btnGenerateReport.addEventListener('click', async () => {
     }
 });
 
+function statusBadge(ok, labelOk = 'Sim', labelNo = 'Não') {
+    const badge = document.createElement('span');
+    badge.className = ok ? 'badge badge-success' : 'badge badge-danger';
+    badge.textContent = ok ? labelOk : labelNo;
+    return badge;
+}
+
+function emailStatusBadge(item) {
+    if (item.email_sent) return statusBadge(true, 'E-mail enviado', '');
+    if (item.status === 'erro') return statusBadge(false, 'Enviado', 'Erro no envio');
+    const badge = document.createElement('span');
+    badge.className = 'badge badge-warning';
+    badge.textContent = item.status === 'processando' ? 'Processando' : 'Pendente';
+    return badge;
+}
+
+function getBillingCompetence() {
+    return billingEmailCompetenceInput.value.trim();
+}
+
+function validCompetence(comp) {
+    return /^(0[1-9]|1[0-2])\/\d{4}$/.test(comp);
+}
+
+async function loadBillingEmails() {
+    const comp = getBillingCompetence();
+    if (!validCompetence(comp)) {
+        billingEmailsList.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text-muted);">Informe a competência no formato MM/AAAA.</td></tr>';
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/billing-emails?competence=${encodeURIComponent(comp)}`);
+        billingEmailItems = await res.json();
+        billingEmailsList.innerHTML = '';
+        totalBillingEmailCountEl.textContent = billingEmailItems.length;
+
+        if (billingEmailItems.length === 0) {
+            billingEmailsList.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text-muted);">Nenhuma nota emitida encontrada para esta competência.</td></tr>';
+            updateBillingEmailSelectionCount();
+            return;
+        }
+
+        billingEmailItems.forEach(item => {
+            const tr = document.createElement('tr');
+            const boletoOk = item.boleto_found || item.boleto_exempt;
+            const eligible = !item.email_sent && item.note_issued && item.pdf_found && boletoOk && item.emails.length > 0;
+
+            const tdCheck = document.createElement('td');
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.value = item.client_id;
+            checkbox.disabled = !eligible;
+            checkbox.checked = selectedBillingEmailClients.has(item.client_id) && eligible;
+            checkbox.addEventListener('change', () => {
+                if (checkbox.checked) {
+                    selectedBillingEmailClients.add(item.client_id);
+                } else {
+                    selectedBillingEmailClients.delete(item.client_id);
+                    selectAllBillingEmailsCheckbox.checked = false;
+                }
+                updateBillingEmailSelectionCount();
+            });
+            tdCheck.appendChild(checkbox);
+
+            const tdClient = document.createElement('td');
+            tdClient.style.fontWeight = '600';
+            tdClient.innerHTML = `${item.client_name}<br><span class="muted-small">NF ${item.invoice_number || '-'}</span>`;
+
+            const tdNote = document.createElement('td');
+            tdNote.appendChild(statusBadge(item.note_issued, 'Nota emitida'));
+
+            const tdPdf = document.createElement('td');
+            tdPdf.appendChild(statusBadge(item.pdf_found, 'PDF encontrado', 'PDF ausente'));
+
+            const tdBoleto = document.createElement('td');
+            if (item.boleto_exempt) {
+                const badge = document.createElement('span');
+                badge.className = 'badge badge-warning';
+                badge.textContent = 'Boleto dispensado';
+                tdBoleto.appendChild(badge);
+            } else {
+                tdBoleto.appendChild(statusBadge(item.boleto_found, 'Boleto encontrado', 'Boleto ausente'));
+            }
+
+            const tdEmail = document.createElement('td');
+            tdEmail.appendChild(emailStatusBadge(item));
+
+            const tdError = document.createElement('td');
+            tdError.textContent = item.error_message || '-';
+            tdError.title = item.failed_step ? `Etapa: ${item.failed_step}` : '';
+
+            const tdRecipients = document.createElement('td');
+            tdRecipients.textContent = item.emails_text || 'Sem e-mail válido';
+
+            tr.appendChild(tdCheck);
+            tr.appendChild(tdClient);
+            tr.appendChild(tdNote);
+            tr.appendChild(tdPdf);
+            tr.appendChild(tdBoleto);
+            tr.appendChild(tdEmail);
+            tr.appendChild(tdError);
+            tr.appendChild(tdRecipients);
+            billingEmailsList.appendChild(tr);
+        });
+        updateBillingEmailSelectionCount();
+    } catch (e) {
+        console.error('Error loading billing emails:', e);
+        billingEmailsList.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--error);">Erro ao carregar envios de faturamento.</td></tr>';
+    }
+}
+
+function updateBillingEmailSelectionCount() {
+    selectedBillingEmailCountEl.textContent = selectedBillingEmailClients.size;
+}
+
+function initBillingEmailEvents() {
+    btnRefreshBillingEmails.addEventListener('click', loadBillingEmails);
+
+    btnVerifyBoletos.addEventListener('click', async () => {
+        const comp = getBillingCompetence();
+        if (!validCompetence(comp)) {
+            alert('Preencha a competência no formato MM/AAAA.');
+            return;
+        }
+        try {
+            const res = await fetch(`/api/billing-emails/verify-boletos?competence=${encodeURIComponent(comp)}`);
+            const data = await res.json();
+            if (!res.ok) {
+                alert(`Erro: ${data.detail || 'Falha ao verificar boletos.'}`);
+                return;
+            }
+            const missing = data.items.filter(item => !item.boleto_found).map(item => `${item.client_name} (NF ${item.invoice_number})`);
+            const message = missing.length
+                ? `Boletos encontrados: ${data.found}/${data.total}. Ausentes: ${missing.join(', ')}`
+                : `Todos os boletos foram encontrados (${data.found}/${data.total}).`;
+            alert(message);
+            loadBillingEmails();
+        } catch (e) {
+            alert('Erro ao verificar boletos.');
+        }
+    });
+
+    selectAllBillingEmailsCheckbox.addEventListener('change', () => {
+        const checkboxes = billingEmailsList.querySelectorAll('input[type="checkbox"]:not(:disabled)');
+        checkboxes.forEach(cb => {
+            cb.checked = selectAllBillingEmailsCheckbox.checked;
+            const id = parseInt(cb.value);
+            if (selectAllBillingEmailsCheckbox.checked) {
+                selectedBillingEmailClients.add(id);
+            } else {
+                selectedBillingEmailClients.delete(id);
+            }
+        });
+        updateBillingEmailSelectionCount();
+    });
+
+    btnSendSelectedEmails.addEventListener('click', async () => {
+        if (selectedBillingEmailClients.size === 0) {
+            alert('Selecione pelo menos um cliente elegível para envio.');
+            return;
+        }
+        await triggerBillingEmailSend('/api/billing-emails/send', Array.from(selectedBillingEmailClients));
+    });
+
+    btnSendAllEmails.addEventListener('click', async () => {
+        if (!confirm('Enviar e-mails para todos os clientes elegíveis desta competência?')) return;
+        await triggerBillingEmailSend('/api/billing-emails/send', null);
+    });
+
+    btnReprocessEmailErrors.addEventListener('click', async () => {
+        await triggerBillingEmailSend('/api/billing-emails/reprocess-errors', null);
+    });
+
+    btnGenerateBillingEmailReport.addEventListener('click', async () => {
+        const comp = getBillingCompetence();
+        if (!validCompetence(comp)) {
+            alert('Preencha a competência no formato MM/AAAA.');
+            return;
+        }
+        try {
+            const res = await fetch('/api/billing-emails/report', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ competence: comp })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                alert(data.message);
+                loadReportsList();
+                if (data.url) window.open(data.url, '_blank');
+            } else {
+                alert(`Erro: ${data.detail}`);
+            }
+        } catch (e) {
+            alert('Erro ao gerar relatório PDF.');
+        }
+    });
+}
+
+async function triggerBillingEmailSend(endpoint, clientIds) {
+    const comp = getBillingCompetence();
+    if (!validCompetence(comp)) {
+        alert('Preencha a competência no formato MM/AAAA.');
+        return;
+    }
+
+    terminalLogOutput.innerHTML = '';
+    appendTerminalLog({
+        timestamp: new Date().toLocaleTimeString(),
+        status: 'info',
+        message: 'Iniciando módulo de envio de e-mails de faturamento...'
+    });
+
+    try {
+        const payload = { competence: comp, client_ids: clientIds };
+        const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        appendTerminalLog({
+            timestamp: new Date().toLocaleTimeString(),
+            status: res.ok ? 'success' : 'error',
+            message: res.ok ? data.message : (data.detail || 'Erro ao iniciar envio.')
+        });
+        selectedBillingEmailClients.clear();
+        selectAllBillingEmailsCheckbox.checked = false;
+        loadBillingEmails();
+    } catch (e) {
+        appendTerminalLog({
+            timestamp: new Date().toLocaleTimeString(),
+            status: 'error',
+            message: 'Erro ao conectar com a API de envio de e-mails.'
+        });
+    }
+}
+
 // Load Clients CRUD List
 async function loadCrudClients() {
     try {
@@ -623,6 +884,7 @@ function initModalEvents() {
             reference_note: clientRefNoteInput.value.trim(),
             retention_type: clientRetentionSelect.value,
             emails: clientEmailInput.value.trim(),
+            requires_boleto: clientRequiresBoletoInput.checked,
             description_template: clientDescTemplateInput.value.trim()
         };
         
@@ -659,10 +921,12 @@ function openClientModal(client = null) {
         clientRefNoteInput.value = client.reference_note || '';
         clientRetentionSelect.value = client.retention_type;
         clientEmailInput.value = client.emails || '';
+        clientRequiresBoletoInput.checked = client.requires_boleto !== 0 && client.requires_boleto !== false;
         clientDescTemplateInput.value = client.description_template;
     } else {
         modalTitle.textContent = "Novo Cliente";
         clientIdInput.value = '';
+        clientRequiresBoletoInput.checked = true;
     }
     
     clientModal.classList.add('show');

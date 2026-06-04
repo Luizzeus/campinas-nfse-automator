@@ -25,7 +25,8 @@ def init_db():
         due_day INTEGER NOT NULL,
         emails TEXT,
         retention_type TEXT NOT NULL, -- 'ISSQN retido', 'Sem retenção', 'Pagamento por depósito bancário'
-        active INTEGER DEFAULT 1
+        active INTEGER DEFAULT 1,
+        requires_boleto INTEGER DEFAULT 1
     )
     """)
     
@@ -46,6 +47,34 @@ def init_db():
     """)
     
     # Create system_config table
+    # Create billing e-mail sending control table. The unique key prevents
+    # duplicated sends for the same client and competence.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS email_sends (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        client_id INTEGER NOT NULL,
+        emission_id INTEGER,
+        competence TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pendente',
+        emails_sent TEXT,
+        from_email TEXT,
+        subject TEXT,
+        invoice_pdf_path TEXT,
+        boleto_pdf_path TEXT,
+        boleto_due_date TEXT,
+        boleto_value REAL,
+        sent_at DATETIME,
+        error_message TEXT,
+        failed_step TEXT,
+        screenshot_path TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(client_id, competence),
+        FOREIGN KEY (client_id) REFERENCES clients (id),
+        FOREIGN KEY (emission_id) REFERENCES emissions (id)
+    )
+    """)
+    
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS system_config (
         key TEXT PRIMARY KEY,
@@ -53,6 +82,17 @@ def init_db():
     )
     """)
     
+    # Lightweight migrations for existing local databases.
+    cursor.execute("PRAGMA table_info(clients)")
+    client_columns = {row["name"] for row in cursor.fetchall()}
+    if "requires_boleto" not in client_columns:
+        cursor.execute("ALTER TABLE clients ADD COLUMN requires_boleto INTEGER DEFAULT 1")
+    cursor.execute("""
+        UPDATE clients
+        SET requires_boleto = 0
+        WHERE lower(name) = lower(?)
+    """, ("Elite",))
+
     conn.commit()
     
     # Seed default configurations
@@ -167,7 +207,8 @@ def init_db():
                 "description_template": "SERVIÇO DE HOSPEDAGEM E ADMINISTRAÇÃO DE SERVIDOR PROFISSIONAL PARA ADMINISTRAÇÃO DE E-MAILS - 300 GB MENSAIS - R$ 332,16 + LOG = R$ 68,00 = R$ 368,00 CONSULTORIA EM INFORMÁTICA DE <Mês de Competência Inicio> A <fim>",
                 "due_day": 10,
                 "emails": "rodrigo.duarte.silveira@gmail.com, janaina@dallas-ps.com",
-                "retention_type": "Sem retenção"
+                "retention_type": "Sem retenção",
+                "requires_boleto": 0
             },
             {
                 "name": "Laticínio Vale do Pardo",
@@ -195,9 +236,9 @@ def init_db():
         
         for c in clients:
             cursor.execute("""
-            INSERT INTO clients (name, cnpj_cpf, invoice_value, boleto_value, reference_note, description_template, due_day, emails, retention_type)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (c["name"], c["cnpj_cpf"], c["invoice_value"], c["boleto_value"], c["reference_note"], c["description_template"], c["due_day"], c["emails"], c["retention_type"]))
+            INSERT INTO clients (name, cnpj_cpf, invoice_value, boleto_value, reference_note, description_template, due_day, emails, retention_type, requires_boleto)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (c["name"], c["cnpj_cpf"], c["invoice_value"], c["boleto_value"], c["reference_note"], c["description_template"], c["due_day"], c["emails"], c["retention_type"], c.get("requires_boleto", 1)))
             
         conn.commit()
     conn.close()
