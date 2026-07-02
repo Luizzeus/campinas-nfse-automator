@@ -103,6 +103,429 @@ async def fill_first_visible(page, selector, value, timeout_ms=10000):
     await locator.fill(str(value))
     return locator
 
+async def fill_invoice_service_value(page, value_br, timeout_ms=15000):
+    """Fill the editable Valor dos Servicos field and verify the portal kept it."""
+    expected_digits = re.sub(r"\D+", "", str(value_br))
+    deadline = datetime.datetime.now() + datetime.timedelta(milliseconds=timeout_ms)
+    last_result = None
+    while datetime.datetime.now() < deadline:
+        last_result = await page.evaluate("""
+            () => {
+                const visible = (el) => {
+                    const style = window.getComputedStyle(el);
+                    const rect = el.getBoundingClientRect();
+                    return (
+                        style.display !== 'none' &&
+                        style.visibility !== 'hidden' &&
+                        rect.width > 0 &&
+                        rect.height > 0
+                    );
+                };
+                
+                const inputs = Array.from(document.querySelectorAll('input'))
+                    .filter(input => visible(input) && !input.disabled && !input.readOnly && (input.type || '').toLowerCase() !== 'hidden');
+                    
+                const labels = Array.from(document.querySelectorAll('*'))
+                    .filter(el => {
+                        if (el.tagName === 'INPUT' || el.tagName === 'SCRIPT' || el.tagName === 'STYLE') return false;
+                        if (!visible(el)) return false;
+                        const txt = (el.innerText || el.textContent || '').toLowerCase();
+                        return txt.includes('valor dos servicos') && !txt.includes('calculo');
+                    });
+                    
+                let target = null;
+                let minDistance = Infinity;
+                
+                for (const input of inputs) {
+                    const inputRect = input.getBoundingClientRect();
+                    for (const label of labels) {
+                        const labelRect = label.getBoundingClientRect();
+                        if (inputRect.top > labelRect.top - 10) {
+                            const dist = Math.abs(inputRect.top - labelRect.bottom) + Math.abs(inputRect.left - labelRect.left);
+                            if (dist < minDistance) {
+                                minDistance = dist;
+                                target = input;
+                            }
+                        }
+                    }
+                }
+                
+                if (!target) {
+                    const candidates = inputs.filter(input => (input.id || '').includes('idInputText_input'));
+                    if (candidates.length > 0) {
+                        candidates.sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+                        target = candidates[0];
+                    }
+                }
+                
+                if (!target) {
+                    target = inputs.find(input => input.value === '0,00');
+                }
+                
+                if (!target) {
+                    const candidates = inputs.map((input) => {
+                        const rect = input.getBoundingClientRect();
+                        return {id: input.id || '', name: input.name || '', value: input.value || '', top: Math.round(rect.top), left: Math.round(rect.left)};
+                    }).slice(0, 12);
+                    return {success: false, error: 'Campo editavel Valor dos Servicos nao encontrado', candidates};
+                }
+                
+                target.scrollIntoView({block: 'center', inline: 'nearest'});
+                document.querySelectorAll('[data-codex-service-value-target="1"]').forEach((el) => el.removeAttribute('data-codex-service-value-target'));
+                target.setAttribute('data-codex-service-value-target', '1');
+                return {
+                    success: true,
+                    value: target.value || '',
+                    id: target.id || '',
+                    name: target.name || '',
+                    labelText: 'Valor dos Serviços'
+                };
+            }
+        """)
+        if last_result and last_result.get("success"):
+            field = page.locator('[data-codex-service-value-target="1"]').first
+            await field.click()
+            await page.keyboard.press("Control+A")
+            await page.keyboard.press("Backspace")
+            await field.press_sequentially(str(value_br), delay=80)
+            await field.press("Tab")
+            await page.wait_for_timeout(1000)
+            current_value = await field.input_value()
+            current_digits = re.sub(r"\D+", "", str(current_value or ""))
+            if current_digits == expected_digits:
+                last_result["value"] = current_value
+                return last_result
+            last_result["typedValue"] = current_value
+        await page.wait_for_timeout(500)
+    raise RuntimeError(f"Valor dos Serviços não aceitou {value_br}. Último retorno: {last_result}")
+
+async def wait_tax_calculation_ready(page, timeout_ms=30000):
+    """Wait until ISSQN fields are no longer masked as ***** after value/tomador changes."""
+    deadline = datetime.datetime.now() + datetime.timedelta(milliseconds=timeout_ms)
+    last_snapshot = None
+    while datetime.datetime.now() < deadline:
+        last_snapshot = await page.evaluate("""
+            () => {
+                const visible = (el) => {
+                    const style = window.getComputedStyle(el);
+                    const rect = el.getBoundingClientRect();
+                    return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+                };
+                const norm = (text) => (text || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase();
+                const form = document.querySelector('form#formNotaFiscal') || document;
+                const inputs = Array.from(form.querySelectorAll('input')).filter(visible);
+                const relevant = inputs.filter((input) => {
+                    let node = input;
+                    for (let depth = 0; depth < 6 && node; depth += 1, node = node.parentElement) {
+                        const text = norm(node.innerText || node.textContent || '');
+                        if (text.includes('calculo do issqn') || text.includes('aliquota') || text.includes('valor iss')) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }).map((input) => input.value || '');
+                return {
+                    values: relevant,
+                    loading: relevant.some((value) => String(value).includes('*****'))
+                };
+            }
+        """)
+        if last_snapshot and last_snapshot.get("values") and not last_snapshot.get("loading"):
+            return last_snapshot
+        await page.wait_for_timeout(1000)
+    raise RuntimeError(f"Portal não concluiu o cálculo do ISSQN; campos ainda em carregamento: {last_snapshot}")
+
+async def zero_retention_fields(page, taxes_to_zero):
+    """Zero both percent and value inputs for the requested retention rows."""
+    targets = await page.evaluate("""
+        (taxes) => {
+            const visible = (el) => {
+                const style = window.getComputedStyle(el);
+                const rect = el.getBoundingClientRect();
+                return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+            };
+            const norm = (text) => (text || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase();
+            const wanted = taxes.map(norm);
+            const rows = Array.from(document.querySelectorAll('tr'));
+            document.querySelectorAll('[data-codex-retention-target]').forEach((el) => el.removeAttribute('data-codex-retention-target'));
+            const targets = [];
+            for (const row of rows) {
+                const rowText = norm(row.innerText || row.textContent || '');
+                const tax = wanted.find((name) => rowText.includes(name));
+                if (!tax) continue;
+                const inputs = Array.from(row.querySelectorAll('input')).filter((input) => visible(input) && !input.disabled && !input.readOnly);
+                for (const input of inputs) {
+                    const current = input.value || '';
+                    if (/^0([,.]0+)?$/.test(current.trim())) continue;
+                    const decimalPart = (current.split(',')[1] || current.split('.')[1] || '');
+                    const value = decimalPart.length >= 4 ? '0,0000' : '0,00';
+                    input.setAttribute('data-codex-retention-target', String(targets.length));
+                    targets.push({tax, id: input.id || '', name: input.name || '', previous: current, value});
+                }
+            }
+
+            const all = Array.from(document.querySelectorAll('*'));
+            const outrasLabel = all
+                .map((el, index) => ({el, index, text: norm(el.innerText || el.textContent || '').replace(/\\s+/g, ' ').trim()}))
+                .find((item) => visible(item.el) && item.text === 'outras retencoes');
+            if (outrasLabel) {
+                const input = all.slice(outrasLabel.index + 1).find((el) =>
+                    el.tagName === 'INPUT' && visible(el) && !el.disabled && !el.readOnly && (el.type || '').toLowerCase() !== 'hidden'
+                );
+                if (input && !/^0([,.]0+)?$/.test((input.value || '').trim())) {
+                    input.setAttribute('data-codex-retention-target', String(targets.length));
+                    targets.push({tax: 'outras', id: input.id || '', name: input.name || '', previous: input.value || '', value: '0,00'});
+                }
+            }
+            return targets;
+        }
+    """, taxes_to_zero)
+    changed = []
+    for index, target in enumerate(targets or []):
+        locator = page.locator(f'[data-codex-retention-target="{index}"]').first
+        try:
+            await locator.scroll_into_view_if_needed()
+            await locator.click()
+            await page.keyboard.press("Control+A")
+            await page.keyboard.press("Backspace")
+            await locator.press_sequentially(target["value"], delay=40)
+            await locator.press("Tab")
+            await page.wait_for_timeout(200)
+            final_value = await locator.input_value()
+            if re.match(r"^0([,.]0+)?$", final_value.strip()):
+                target["final"] = final_value
+                changed.append(target)
+        except Exception as exc:
+            target["error"] = str(exc)
+            changed.append(target)
+    await page.wait_for_timeout(1000)
+    return changed
+
+async def validate_manual_invoice_values(page, expected_service_value, taxes_to_zero):
+    """Validate visible service value and retention fields before clicking Emitir."""
+    expected_digits = re.sub(r"\D+", "", str(expected_service_value))
+    snapshot = await page.evaluate("""
+        (taxes) => {
+            const visible = (el) => {
+                const style = window.getComputedStyle(el);
+                const rect = el.getBoundingClientRect();
+                return (
+                    style.display !== 'none' &&
+                    style.visibility !== 'hidden' &&
+                    rect.width > 0 &&
+                    rect.height > 0
+                );
+            };
+            
+            const inputs = Array.from(document.querySelectorAll('input'))
+                .filter(input => visible(input) && !input.disabled && !input.readOnly && (input.type || '').toLowerCase() !== 'hidden');
+                
+            const labels = Array.from(document.querySelectorAll('*'))
+                .filter(el => {
+                    if (el.tagName === 'INPUT' || el.tagName === 'SCRIPT' || el.tagName === 'STYLE') return false;
+                    if (!visible(el)) return false;
+                    const txt = (el.innerText || el.textContent || '').toLowerCase();
+                    return txt.includes('valor dos servicos') && !txt.includes('calculo');
+                });
+                
+            let target = null;
+            let minDistance = Infinity;
+            
+            for (const input of inputs) {
+                const inputRect = input.getBoundingClientRect();
+                for (const label of labels) {
+                    const labelRect = label.getBoundingClientRect();
+                    if (inputRect.top > labelRect.top - 10) {
+                        const dist = Math.abs(inputRect.top - labelRect.bottom) + Math.abs(inputRect.left - labelRect.left);
+                        if (dist < minDistance) {
+                            minDistance = dist;
+                            target = input;
+                        }
+                    }
+                }
+            }
+            
+            if (!target) {
+                const candidates = inputs.filter(input => (input.id || '').includes('idInputText_input'));
+                if (candidates.length > 0) {
+                    candidates.sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+                    target = candidates[0];
+                }
+            }
+            
+            if (!target) {
+                target = inputs.find(input => input.value === '0,00');
+            }
+            
+            let serviceValue = '';
+            if (target) {
+                serviceValue = target.value || '';
+            }
+
+            const norm = (text) => (text || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase();
+            const wanted = taxes.map(norm);
+            const nonZeroRetentions = [];
+            for (const row of Array.from(document.querySelectorAll('tr'))) {
+                const rowText = norm(row.innerText || row.textContent || '');
+                const tax = wanted.find((name) => rowText.includes(name));
+                if (!tax) continue;
+                const rowInputs = Array.from(row.querySelectorAll('input')).filter((input) => visible(input) && !input.disabled && !input.readOnly);
+                for (const input of rowInputs) {
+                    const value = input.value || '';
+                    if (!/^0([,.]0+)?$/.test(value.trim())) {
+                        nonZeroRetentions.push({tax, value, id: input.id || '', name: input.name || ''});
+                    }
+                }
+            }
+            return {serviceValue, nonZeroRetentions};
+        }
+    """, taxes_to_zero)
+    service_digits = re.sub(r"\D+", "", str(snapshot.get("serviceValue") or ""))
+    if service_digits != expected_digits:
+        raise RuntimeError(
+            f"Valor dos Serviços visível não confere antes de emitir. "
+            f"Esperado {expected_service_value}, encontrado {snapshot.get('serviceValue') or 'vazio'}."
+        )
+    non_zero = snapshot.get("nonZeroRetentions") or []
+    if non_zero:
+        details = "; ".join(f"{item.get('tax')}={item.get('value')}" for item in non_zero)
+        raise RuntimeError(f"Retenções ainda não estão zeradas antes de emitir: {details}")
+    return snapshot
+
+async def select_economic_activity(page, code="620400001", timeout_ms=20000):
+    """Select and confirm Atividade do Cadastro Economico by service/CNAE code."""
+    deadline = datetime.datetime.now() + datetime.timedelta(milliseconds=timeout_ms)
+    last_result = None
+    while datetime.datetime.now() < deadline:
+        last_result = await page.evaluate("""
+            async (code) => {
+                const norm = (text) => (text || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase();
+                const visible = (el) => {
+                    const style = window.getComputedStyle(el);
+                    const rect = el.getBoundingClientRect();
+                    return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+                };
+                const optionText = (select) => {
+                    const option = select.options && select.selectedIndex >= 0 ? select.options[select.selectedIndex] : null;
+                    return option ? (option.text || option.textContent || '') : '';
+                };
+                const scoreSelect = (select) => {
+                    const attrs = norm(`${select.id || ''} ${select.name || ''} ${select.getAttribute('aria-label') || ''}`);
+                    let score = /atividade|cnae|servico|servi[cç]o/.test(attrs) ? 20 : 0;
+                    let node = select;
+                    for (let depth = 0; depth < 7 && node; depth += 1, node = node.parentElement) {
+                        const text = norm(node.innerText || node.textContent || '');
+                        if (text.includes('atividade') && (text.includes('cadastro') || text.includes('economico'))) score += 30;
+                        if (text.includes('tomador') || text.includes('retencoes') || text.includes('calculo do issqn')) score -= 20;
+                    }
+                    const options = Array.from(select.options || []);
+                    if (options.some((opt) => (opt.value || '').includes(code) || (opt.text || opt.textContent || '').includes(code))) score += 40;
+                    return score;
+                };
+
+                const selects = Array.from(document.querySelectorAll('select'))
+                    .map((select) => ({select, score: scoreSelect(select)}))
+                    .filter((item) => item.score > 0)
+                    .sort((a, b) => b.score - a.score);
+                const targetSelect = selects.length ? selects[0].select : null;
+                if (!targetSelect) return {success: false, error: 'Select de atividade nao encontrado'};
+
+                const currentText = optionText(targetSelect);
+                if ((targetSelect.value || '').includes(code) || currentText.includes(code)) {
+                    return {success: true, alreadySelected: true, text: currentText, value: targetSelect.value || ''};
+                }
+
+                const rawOption = Array.from(targetSelect.options || [])
+                    .find((opt) => (opt.value || '').includes(code) || (opt.text || opt.textContent || '').includes(code));
+                if (!rawOption) return {success: false, error: `Opcao ${code} nao encontrada no select de atividade`};
+
+                const container = targetSelect.closest('.ui-selectonemenu');
+                if (container) {
+                    const labelEl = container.querySelector('.ui-selectonemenu-label') || container;
+                    labelEl.click();
+                    await new Promise((resolve) => setTimeout(resolve, 500));
+                    const panelId = container.id ? `${container.id}_panel` : '';
+                    let panel = panelId ? document.getElementById(panelId) : null;
+                    if (!panel || !visible(panel)) {
+                        panel = Array.from(document.querySelectorAll('.ui-selectonemenu-panel')).find(visible);
+                    }
+                    if (panel) {
+                        const items = Array.from(panel.querySelectorAll('li.ui-selectonemenu-item'));
+                        const targetItem = items.find((item) => (item.innerText || item.textContent || '').includes(code));
+                        if (targetItem) {
+                            targetItem.click();
+                            await new Promise((resolve) => setTimeout(resolve, 500));
+                            return {success: true, method: 'visual click', text: targetItem.innerText || targetItem.textContent || '', value: rawOption.value || ''};
+                        }
+                    }
+                }
+
+                targetSelect.value = rawOption.value;
+                for (const eventName of ['input', 'change', 'blur']) {
+                    targetSelect.dispatchEvent(new Event(eventName, {bubbles: true}));
+                }
+                if (window.jQuery) {
+                    window.jQuery(targetSelect).trigger('change');
+                }
+                return {success: true, method: 'raw select', text: rawOption.text || rawOption.textContent || '', value: rawOption.value || ''};
+            }
+        """, code)
+        if last_result and last_result.get("success"):
+            await page.wait_for_timeout(1000)
+            try:
+                await wait_processing_finished(page, timeout_ms=8000)
+            except Exception:
+                pass
+            return last_result
+        await page.wait_for_timeout(500)
+    raise RuntimeError(f"Não consegui selecionar a atividade econômica {code}. Último retorno: {last_result}")
+
+async def close_optional_complement_dialog(page, timeout_ms=5000):
+    """Close optional Complemento dialogs that block the form after activity/tomador AJAX."""
+    deadline = datetime.datetime.now() + datetime.timedelta(milliseconds=timeout_ms)
+    last_text = None
+    while datetime.datetime.now() < deadline:
+        result = await page.evaluate("""
+            () => {
+                const norm = (text) => (text || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase();
+                const visible = (el) => {
+                    const style = window.getComputedStyle(el);
+                    const rect = el.getBoundingClientRect();
+                    return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+                };
+                const dialogs = Array.from(document.querySelectorAll(
+                    '.ui-dialog, .modal, [role="dialog"], .swal2-popup, .ui-confirm-dialog'
+                )).filter(visible);
+                const dialog = dialogs.find((el) => norm(el.innerText || el.textContent).includes('complement'));
+                if (!dialog) return {closed: false, found: false};
+                const text = (dialog.innerText || dialog.textContent || '').replace(/\\s+/g, ' ').trim();
+                const controls = Array.from(dialog.querySelectorAll('button, a, input[type="button"], input[type="submit"], .ui-dialog-titlebar-close'))
+                    .filter(visible);
+                const cancel = controls.find((el) => {
+                    const label = norm(`${el.innerText || el.textContent || ''} ${el.value || ''} ${el.title || ''} ${el.getAttribute('aria-label') || ''}`);
+                    return label.includes('cancelar') || label.includes('fechar') || label === 'nao' || label.includes(' nao ') || label.includes('não');
+                });
+                const close = cancel || controls.find((el) => {
+                    const label = norm(`${el.innerText || el.textContent || ''} ${el.value || ''} ${el.title || ''} ${el.getAttribute('aria-label') || ''} ${el.className || ''}`);
+                    return label.includes('close') || label.includes('ui-dialog-titlebar-close');
+                });
+                if (!close) return {closed: false, found: true, text};
+                close.click();
+                return {closed: true, found: true, text};
+            }
+        """)
+        if result and result.get("closed"):
+            await page.wait_for_timeout(1000)
+            try:
+                await wait_processing_finished(page, timeout_ms=8000)
+            except Exception:
+                pass
+            return result
+        if result and result.get("found"):
+            last_text = result.get("text")
+        await page.wait_for_timeout(500)
+    return {"closed": False, "found": bool(last_text), "text": last_text}
+
 async def find_description_field(page, timeout_ms=30000):
     deadline = datetime.datetime.now() + datetime.timedelta(milliseconds=timeout_ms)
     last_error = None
@@ -1309,94 +1732,14 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
                     
                     # Select Atividade do cadastro econômico (CNAE/Serviço) first
                     await log_progress("Selecionando atividade econômica (620400001 - Consultoria em TI)...", "running", client_id)
-                    activity_result = await page.evaluate("""
-                        async (code) => {
-                            const selects = Array.from(document.querySelectorAll('select'));
-                            let targetSelect = null;
-                            for (const sel of selects) {
-                                const id = (sel.id || '').toLowerCase();
-                                const name = (sel.name || '').toLowerCase();
-                                if (id.includes('atividade') || name.includes('atividade') || id.includes('cnae') || name.includes('cnae') || id.includes('servico') || name.includes('servico')) {
-                                    targetSelect = sel;
-                                    break;
-                                }
-                            }
-                            if (!targetSelect) {
-                                const labels = Array.from(document.querySelectorAll('label, span, td, div'));
-                                for (const el of labels) {
-                                    const text = el.innerText || el.textContent || '';
-                                    if (text.includes('Atividade') && text.includes('cadastro')) {
-                                        const parent = el.closest('.ui-g-12, .form-group, tr, div');
-                                        if (parent) {
-                                            const sel = parent.querySelector('select');
-                                            if (sel) {
-                                                targetSelect = sel;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            if (!targetSelect) return { success: false, error: 'Select dropdown element not found' };
-                            
-                            const container = targetSelect.closest('.ui-selectonemenu');
-                            if (!container) {
-                                const option = Array.from(targetSelect.options).find(opt => opt.value.includes(code) || opt.text.includes(code));
-                                if (option) {
-                                    targetSelect.value = option.value;
-                                    targetSelect.dispatchEvent(new Event('change'));
-                                    return { success: true, method: 'raw select', text: option.text };
-                                }
-                                return { success: false, error: 'Container not found and raw option not found' };
-                            }
-                            
-                            const labelEl = container.querySelector('.ui-selectonemenu-label') || container;
-                            labelEl.click();
-                            
-                            const panelId = container.id ? container.id + '_panel' : '';
-                            let panel = panelId ? document.getElementById(panelId) : null;
-                            
-                            if (!panel) {
-                                panel = Array.from(document.querySelectorAll('.ui-selectonemenu-panel'))
-                                    .find(p => p.style.display !== 'none');
-                            }
-                            
-                            if (!panel) {
-                                await new Promise(r => setTimeout(r, 600));
-                                panel = panelId ? document.getElementById(panelId) : null;
-                                if (!panel) {
-                                    panel = Array.from(document.querySelectorAll('.ui-selectonemenu-panel'))
-                                        .find(p => p.style.display !== 'none');
-                                }
-                            }
-                            
-                            if (!panel) return { success: false, error: 'Dropdown panel overlay not found' };
-                            
-                            const items = Array.from(panel.querySelectorAll('li.ui-selectonemenu-item'));
-                            const targetItem = items.find(item => {
-                                const txt = item.innerText || item.textContent || '';
-                                return txt.includes(code);
-                            });
-                            
-                            if (targetItem) {
-                                targetItem.click();
-                                return { success: true, method: 'visual click', text: targetItem.innerText || targetItem.textContent || '' };
-                            } else {
-                                const fallbackItem = items.find(item => (item.innerText || item.textContent || '').trim() !== '');
-                                if (fallbackItem) {
-                                    fallbackItem.click();
-                                    return { success: true, method: 'visual click fallback', text: fallbackItem.innerText || fallbackItem.textContent || '', warning: 'Target code not found in visual list' };
-                                }
-                            }
-                            return { success: false, error: 'Option list item not found in overlay panel' };
-                        }
-                    """, "620400001")
-                    
-                    if activity_result and activity_result.get("success"):
-                        warn = f" ({activity_result.get('warning')})" if activity_result.get('warning') else ""
-                        await log_progress(f"Atividade selecionada: {activity_result.get('text')}{warn}", "success", client_id)
-                    else:
-                        await log_progress(f"Não consegui selecionar a atividade automaticamente: {activity_result.get('error') if activity_result else 'retorno vazio'}", "warning", client_id)
+                    activity_result = await select_economic_activity(page, "620400001", timeout_ms=20000)
+                    already_selected = " já estava selecionada" if activity_result.get("alreadySelected") else ""
+                    await log_progress(f"Atividade econômica{already_selected}: {activity_result.get('text')}", "success", client_id)
+                    complement_result = await close_optional_complement_dialog(page, timeout_ms=5000)
+                    if complement_result.get("closed"):
+                        await log_progress("Popup opcional de complemento fechada para continuar a emissão.", "info", client_id)
+                        activity_result = await select_economic_activity(page, "620400001", timeout_ms=20000)
+                        await log_progress(f"Atividade econômica confirmada após fechar complemento: {activity_result.get('text')}", "success", client_id)
                     
                     await page.wait_for_timeout(3000) # Wait for AJAX reload of taxation
                     
@@ -1461,6 +1804,9 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
                         await log_progress("Alerta: não consegui localizar o botão de pesquisa do tomador.", "warning", client_id)
                         
                     await page.wait_for_timeout(4000) # Wait for AJAX load of tomador details
+                    complement_result = await close_optional_complement_dialog(page, timeout_ms=3000)
+                    if complement_result.get("closed"):
+                        await log_progress("Popup opcional de complemento fechada após pesquisar o tomador.", "info", client_id)
                     
                     # Check if "Inserir" button is visible under Dados Cadastrais and click it to bind/add the tomador to the invoice
                     inserir_selectors = [
@@ -1488,6 +1834,19 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
                             
                     if clicked_inserir:
                         await log_progress("Tomador de fora vinculado com sucesso.", "success", client_id)
+                        complement_result = await close_optional_complement_dialog(page, timeout_ms=5000)
+                        if complement_result.get("closed"):
+                            await log_progress("Popup opcional de complemento fechada após vincular o tomador.", "info", client_id)
+
+                    await log_progress("Conferindo atividade econômica após carregar/vincular o tomador...", "running", client_id)
+                    activity_result = await select_economic_activity(page, "620400001", timeout_ms=20000)
+                    already_selected = " permaneceu selecionada" if activity_result.get("alreadySelected") else " foi reaplicada"
+                    await log_progress(f"Atividade econômica{already_selected}: {activity_result.get('text')}", "success", client_id)
+                    complement_result = await close_optional_complement_dialog(page, timeout_ms=3000)
+                    if complement_result.get("closed"):
+                        await log_progress("Popup opcional de complemento fechada após reconferir a atividade.", "info", client_id)
+                        activity_result = await select_economic_activity(page, "620400001", timeout_ms=20000)
+                        await log_progress(f"Atividade econômica confirmada novamente: {activity_result.get('text')}", "success", client_id)
                         
                     # Wait for AJAX reload of taxation details (when Alíquota and Valor ISS exit the '*****' loading state)
                     await log_progress("Aguardando o portal calcular as alíquotas (saindo do estado '*****')...", "running", client_id)
@@ -1522,6 +1881,17 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
                 else:
                     await log_progress("Não encontrei um campo editável de competência no formulário; seguindo sem alterar esse campo.", "warning", client_id)
 
+                if not cloned:
+                    await log_progress("Revalidando atividade econômica antes de preencher os dados finais da nota...", "running", client_id)
+                    activity_result = await select_economic_activity(page, "620400001", timeout_ms=20000)
+                    already_selected = " confirmada" if activity_result.get("alreadySelected") else " reaplicada"
+                    await log_progress(f"Atividade econômica{already_selected}: {activity_result.get('text')}", "success", client_id)
+                    complement_result = await close_optional_complement_dialog(page, timeout_ms=3000)
+                    if complement_result.get("closed"):
+                        await log_progress("Popup opcional de complemento fechada antes dos dados finais.", "info", client_id)
+                        activity_result = await select_economic_activity(page, "620400001", timeout_ms=20000)
+                        await log_progress(f"Atividade econômica confirmada para emissão: {activity_result.get('text')}", "success", client_id)
+
                 await log_progress("Preenchendo descrição da nota...", "running", client_id)
 
                 # Fill Descrição Nota Fiscal. In cloned notes the service value is
@@ -1537,9 +1907,19 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
                     await log_progress("Nota clonada: mantendo Valor dos Serviços original da referência.", "info", client_id)
                 else:
                     await log_progress("Preenchendo Valor dos Serviços...", "running", client_id)
-                    valor_sel = "xpath=(//*[contains(.,'Valor dos Serviços')]/following::input[not(@readonly) and not(@disabled)])[1]"
-                    valor_field = await fill_first_visible(page, valor_sel, value_br, timeout_ms=10000)
-                    await valor_field.press("Tab")
+                    value_result = await fill_invoice_service_value(page, value_br, timeout_ms=15000)
+                    await log_progress(
+                        f"Valor dos Serviços confirmado no portal: {value_result.get('value')}",
+                        "success",
+                        client_id
+                    )
+                    await log_progress("Aguardando recálculo do ISSQN após informar o valor...", "running", client_id)
+                    tax_snapshot = await wait_tax_calculation_ready(page, timeout_ms=30000)
+                    await log_progress(
+                        f"Cálculo do ISSQN concluído: {', '.join(tax_snapshot.get('values') or [])}",
+                        "success",
+                        client_id
+                    )
 
                 if VALIDATION_ONLY:
                     await log_progress("Modo validação ativo: NÃO vou clicar em Emitir Nota Fiscal.", "warning", client_id)
@@ -1582,18 +1962,22 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
                 taxes_to_zero = ["PIS", "INSS", "CSLL", "COFINS", "IR", "Outras"]
                 if retention_type == "Sem retenção":
                     taxes_to_zero.extend(["ISS", "ISSQN"])
-                
-                for imp in taxes_to_zero:
-                    for col_idx in [2, 3]:
-                        imp_sel = f"xpath=//div[.//h3[contains(.,'Reten') or contains(.,'reten')]]//table//tr[td[1][contains(normalize-space(.), '{imp}')]]//td[{col_idx}]//input"
-                        if await page.locator(imp_sel).count() > 0:
-                            val = await page.locator(imp_sel).first.input_value()
-                            if val not in ["0,00", "0.00", "0,0000", "0.0000"]:
-                                await page.locator(imp_sel).first.fill("0,00")
-                                await page.locator(imp_sel).first.press("Tab")
-                                await page.wait_for_timeout(300)
-                
+
+                zeroed_fields = await zero_retention_fields(page, taxes_to_zero)
+                if zeroed_fields:
+                    await log_progress(f"Retenções zeradas: {len(zeroed_fields)} campo(s) ajustado(s).", "success", client_id)
+                else:
+                    await log_progress("Retenções já estavam zeradas ou não havia campos editáveis para ajustar.", "info", client_id)
+
                 await page.wait_for_timeout(1000)
+                if not cloned:
+                    await log_progress("Conferindo valor e retenções antes de emitir...", "running", client_id)
+                    validation_snapshot = await validate_manual_invoice_values(page, value_br, taxes_to_zero)
+                    await log_progress(
+                        f"Conferência final OK: Valor dos Serviços {validation_snapshot.get('serviceValue')} e retenções zeradas.",
+                        "success",
+                        client_id
+                    )
                 
                 # 7. Click Emitir Nota Fiscal
                 await log_progress("Clicando em Emitir Nota Fiscal...", "running", client_id)
