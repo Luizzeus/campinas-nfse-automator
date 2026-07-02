@@ -152,12 +152,25 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                     await log_progress("Navegando para o menu Cobrança...", "running")
                     cobrança_sel = "xpath=//a[normalize-space()='Cobrança' or contains(normalize-space(.), 'Cobrança')]"
                     await click_element(page, cobrança_sel)
-                    await page.wait_for_timeout(2000)
+                    await page.wait_for_timeout(3000)
+                    
+                    # Locate the central frame
+                    frame = page.frame(name="paginaCentral")
+                    if not frame:
+                        for f in page.frames:
+                            if f.name == "paginaCentral" or "paginaCentral" in f.url or "Cobranca" in f.url or "cobranca" in f.url:
+                                frame = f
+                                break
+                    if not frame:
+                        frame = page
+                        await log_progress("Aviso: Quadro paginaCentral não encontrado. Usando página principal.", "warning")
+                    else:
+                        await log_progress("Quadro paginaCentral localizado com sucesso.", "running")
                     
                     # Click "Emitir Boleto"
                     await log_progress("Clicando em Emitir Boleto...", "running")
                     emitir_sel = "xpath=//a[normalize-space()='Emitir Boleto' or contains(normalize-space(.), 'Emitir Boleto')]"
-                    await click_element(page, emitir_sel)
+                    await click_element(frame, emitir_sel)
                     await page.wait_for_timeout(3000)
                     
                     # Passo 2: Fill Boleto Details Form
@@ -165,9 +178,9 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                     
                     # 1. Document Number (same as NFS-e)
                     doc_input_sel = "xpath=//input[contains(@id, 'numDocumento') or contains(@name, 'numDocumento') or contains(@id, 'NumeroDocumento') or contains(@id, 'txtNumero')]"
-                    if await page.locator(doc_input_sel).count() == 0:
+                    if await frame.locator(doc_input_sel).count() == 0:
                         doc_input_sel = "xpath=//td[contains(., 'Número do documento')]/following::input[1]"
-                    await page.fill(doc_input_sel, str(invoice_number))
+                    await frame.fill(doc_input_sel, str(invoice_number))
                     
                     # 2. Due Date (Vencimento)
                     day, month, year = get_due_date_for_client(ref_date, due_day)
@@ -175,72 +188,69 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                     
                     # Find day, month, year inputs
                     day_sel = "xpath=//input[contains(@id, 'diaVencimento') or contains(@id, 'dtVencimentoDia') or contains(@id, 'txtDiaVenc')]"
-                    if await page.locator(day_sel).count() == 0:
+                    if await frame.locator(day_sel).count() == 0:
                         day_sel = "xpath=//td[contains(., 'Vencimento')]/following::input[1]"
-                    await page.fill(day_sel, day)
+                    await frame.fill(day_sel, day)
                     
                     month_sel = "xpath=//input[contains(@id, 'mesVencimento') or contains(@id, 'dtVencimentoMes') or contains(@id, 'txtMesVenc')]"
-                    if await page.locator(month_sel).count() == 0:
+                    if await frame.locator(month_sel).count() == 0:
                         month_sel = "xpath=//td[contains(., 'Vencimento')]/following::input[2]"
-                    await page.fill(month_sel, month)
+                    await frame.fill(month_sel, month)
                     
                     year_sel = "xpath=//input[contains(@id, 'anoVencimento') or contains(@id, 'dtVencimentoAno') or contains(@id, 'txtAnoVenc')]"
-                    if await page.locator(year_sel).count() == 0:
+                    if await frame.locator(year_sel).count() == 0:
                         year_sel = "xpath=//td[contains(., 'Vencimento')]/following::input[3]"
-                    await page.fill(year_sel, year)
+                    await frame.fill(year_sel, year)
                     
                     # 3. Document Value (Valor do Documento)
                     val_input_sel = "xpath=//input[contains(@id, 'valor') or contains(@id, 'vlDoc') or contains(@id, 'txtValor')]"
-                    if await page.locator(val_input_sel).count() == 0:
+                    if await frame.locator(val_input_sel).count() == 0:
                         val_input_sel = "xpath=//*[contains(text(), 'Valor do Documento')]/following::input[1]"
                     val_str = f"{boleto_value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-                    await page.fill(val_input_sel, val_str)
+                    await frame.fill(val_input_sel, val_str)
                     
                     # 4. Multa e Juros
                     # Multa: Select %, Value 2,00, Days 1
                     multa_sel = "xpath=//select[contains(@id, 'multa') or contains(@id, 'tipoMulta')]"
-                    # Multa e Juros
-                    # Multa: Select %, Value 2,00, Days 1
-                    multa_sel = "xpath=//select[contains(@id, 'multa') or contains(@id, 'tipoMulta')]"
-                    if await page.locator(multa_sel).count() > 0:
+                    if await frame.locator(multa_sel).count() > 0:
                         try:
-                            await page.select_option(multa_sel, label="%")
+                            await frame.select_option(multa_sel, label="%")
                         except Exception:
                             try:
-                                await page.select_option(multa_sel, value="2")
+                                await frame.select_option(multa_sel, value="2")
                             except Exception:
                                 pass
                     
                     multa_val_sel = "xpath=//input[contains(@id, 'vlMulta') or contains(@id, 'pctMulta')]"
-                    if await page.locator(multa_val_sel).count() > 0:
-                        await page.fill(multa_val_sel, "2,00")
+                    if await frame.locator(multa_val_sel).count() > 0:
+                        await frame.fill(multa_val_sel, "2,00")
                         
                     multa_dias_sel = "xpath=//input[contains(@id, 'diasMulta') or contains(@id, 'atrasoMulta')]"
-                    if await page.locator(multa_dias_sel).count() > 0:
-                        await page.fill(multa_dias_sel, "1")
+                    if await frame.locator(multa_dias_sel).count() > 0:
+                        await frame.fill(multa_dias_sel, "1")
                         
                     # Juros: Select %, Value 1,00, Days 1
                     juros_sel = "xpath=//select[contains(@id, 'juros') or contains(@id, 'tipoJuros')]"
-                    if await page.locator(juros_sel).count() > 0:
+                    if await frame.locator(juros_sel).count() > 0:
                         try:
-                            await page.select_option(juros_sel, label="%")
+                            await frame.select_option(juros_sel, label="%")
                         except Exception:
                             try:
-                                await page.select_option(juros_sel, value="1")
+                                await frame.select_option(juros_sel, value="1")
                             except Exception:
                                 pass
                         
                     juros_val_sel = "xpath=//input[contains(@id, 'vlJuros') or contains(@id, 'pctJuros')]"
-                    if await page.locator(juros_val_sel).count() > 0:
-                        await page.fill(juros_val_sel, "1,00")
+                    if await frame.locator(juros_val_sel).count() > 0:
+                        await frame.fill(juros_val_sel, "1,00")
                         
                     juros_dias_sel = "xpath=//input[contains(@id, 'diasJuros') or contains(@id, 'atrasoJuros')]"
-                    if await page.locator(juros_dias_sel).count() > 0:
-                        await page.fill(juros_dias_sel, "1")
+                    if await frame.locator(juros_dias_sel).count() > 0:
+                        await frame.fill(juros_dias_sel, "1")
                         
                     # Click next (Avançar)
                     avancar_sel = "xpath=//input[contains(@value, 'Avançar') or contains(@id, 'botaoAvancar') or @type='submit']"
-                    await click_element(page, avancar_sel)
+                    await click_element(frame, avancar_sel)
                     await page.wait_for_timeout(3000)
                     
                     # Passo 3: Pagador Search & Selection
@@ -252,7 +262,7 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                     popup = None
                     try:
                         async with context.expect_page(timeout=10000) as page_info:
-                            await click_element(page, lista_pagadores_sel)
+                            await click_element(frame, lista_pagadores_sel)
                         popup = await page_info.value
                     except Exception:
                         if len(context.pages) > 1:
@@ -277,7 +287,7 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                     
                     # Click Avançar/Confirmar to generate the boleto
                     confirmar_sel = "xpath=//input[contains(@value, 'Avançar') or contains(@value, 'Avancar') or contains(@value, 'Confirmar') or contains(@value, 'Emitir') or contains(@value, 'Gerar') or contains(@id, 'botaoConfirmar') or contains(@id, 'botaoAvancar') or @type='submit']"
-                    await click_element(page, confirmar_sel)
+                    await click_element(frame, confirmar_sel)
                     await page.wait_for_timeout(4000)
                     
                     # Save generated PDF using "Salvar como arquivo" button
@@ -288,7 +298,7 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                     popup_save = None
                     try:
                         async with context.expect_page(timeout=10000) as page_info:
-                            await click_element(page, salvar_arquivo_sel)
+                            await click_element(frame, salvar_arquivo_sel)
                         popup_save = await page_info.value
                     except Exception:
                         if len(context.pages) > 1:
