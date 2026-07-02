@@ -1304,33 +1304,7 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
                     else:
                         await log_progress("Cliente sem nota de referência. Preenchendo dados manualmente...", "running", client_id)
                     
-                    # Fill CNPJ/CPF of tomador
-                    cnpj_field_sel = 'xpath=//input[contains(@id, "CpfCnpj") or contains(@name, "CpfCnpj")]'
-                    cnpj_field = await first_visible_locator(page, cnpj_field_sel, timeout_ms=10000, require_enabled=True)
-                    await cnpj_field.click()
-                    # Clear it first using focus and select_all
-                    await page.keyboard.press("Control+A")
-                    await page.keyboard.press("Backspace")
-                    # Type the CNPJ character by character
-                    await cnpj_field.press_sequentially(client_cnpj, delay=100)
-                    await page.wait_for_timeout(500)
-                    await cnpj_field.press("Tab")
-                    
-                    # Manually dispatch events to force PrimeFaces/jQuery autocomplete & AJAX triggers
-                    await page.evaluate("""
-                        (el) => {
-                            if (el) {
-                                el.dispatchEvent(new Event('input', { bubbles: true }));
-                                el.dispatchEvent(new Event('change', { bubbles: true }));
-                                el.dispatchEvent(new Event('blur', { bubbles: true }));
-                            }
-                        }
-                    """, cnpj_field)
-                    
-                    await page.wait_for_timeout(4000) # Wait for AJAX load
-
-                    
-                    # Select Atividade do cadastro econômico (CNAE/Serviço)
+                    # Select Atividade do cadastro econômico (CNAE/Serviço) first
                     await log_progress("Selecionando atividade econômica (620400001 - Consultoria em TI)...", "running", client_id)
                     activity_result = await page.evaluate("""
                         (code) => {
@@ -1387,6 +1361,32 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
                         await log_progress(f"Não consegui selecionar a atividade automaticamente: {activity_result.get('error') if activity_result else 'retorno vazio'}", "warning", client_id)
                     
                     await page.wait_for_timeout(3000) # Wait for AJAX reload of taxation
+                    
+                    # Fill CNPJ/CPF of tomador second
+                    cnpj_field_sel = 'xpath=//input[contains(@id, "CpfCnpj") or contains(@name, "CpfCnpj")]'
+                    cnpj_field = await first_visible_locator(page, cnpj_field_sel, timeout_ms=10000, require_enabled=True)
+                    await cnpj_field.click()
+                    # Clear it first using focus and select_all
+                    await page.keyboard.press("Control+A")
+                    await page.keyboard.press("Backspace")
+                    # Type the CNPJ character by character
+                    await cnpj_field.press_sequentially(client_cnpj, delay=100)
+                    await page.wait_for_timeout(500)
+                    await cnpj_field.press("Tab")
+                    
+                    # Manually dispatch events to force PrimeFaces/jQuery autocomplete & AJAX triggers
+                    await page.evaluate("""
+                        (el) => {
+                            if (el) {
+                                el.dispatchEvent(new Event('input', { bubbles: true }));
+                                el.dispatchEvent(new Event('change', { bubbles: true }));
+                                el.dispatchEvent(new Event('blur', { bubbles: true }));
+                            }
+                        }
+                    """, cnpj_field)
+                    
+                    await page.wait_for_timeout(4000) # Wait for AJAX load
+
 
                     
                 # 5. Pre-fill note details
