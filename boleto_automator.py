@@ -48,6 +48,18 @@ async def wait_for_bradesco_logged_in(page, timeout_ms=180000):
                 pass
         await page.wait_for_timeout(1000)
     return False
+async def click_element(page, selector, timeout_ms=15000):
+    """Click an element, using force=True and falling back to JS click to bypass overlays."""
+    locator = page.locator(selector).first
+    try:
+        await locator.wait_for(state="attached", timeout=timeout_ms)
+        await locator.click(force=True, timeout=5000)
+    except Exception:
+        try:
+            await locator.evaluate("(el) => el.click()")
+        except Exception as e:
+            raise RuntimeError(f"Failed to click selector {selector}: {e}")
+
 
 async def run_boleto_automation(emissions_to_process, ref_date=None, progress_callback=None):
     """
@@ -110,12 +122,12 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
             await page.fill('input[id="identificationForm:txtSenha"]', bradesco_password)
             
             await log_progress("Clicando em Avançar no login do Bradesco...", "info")
-            await page.click('input[id="identificationForm:botaoAvancar"]')
+            await click_element(page, 'input[id="identificationForm:botaoAvancar"]')
             await page.wait_for_timeout(3000)
             
+            # Wait up to 3 minutes for login to complete
             await log_progress("Aguardando autenticação 2FA (Chave de Segurança/Token) e login pelo usuário na tela do navegador...", "warning")
             
-            # Wait up to 3 minutes for login to complete
             if not await wait_for_bradesco_logged_in(page, timeout_ms=180000):
                 await log_progress("Tempo esgotado aguardando o login no Bradesco. Certifique-se de realizar o login completo na tela.", "error")
                 await browser.close()
@@ -139,13 +151,13 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                     # Navigate to "Cobrança" tab
                     await log_progress("Navegando para o menu Cobrança...", "running")
                     cobrança_sel = "xpath=//a[normalize-space()='Cobrança' or contains(normalize-space(.), 'Cobrança')]"
-                    await page.click(cobrança_sel)
+                    await click_element(page, cobrança_sel)
                     await page.wait_for_timeout(2000)
                     
                     # Click "Emitir Boleto"
                     await log_progress("Clicando em Emitir Boleto...", "running")
                     emitir_sel = "xpath=//a[normalize-space()='Emitir Boleto' or contains(normalize-space(.), 'Emitir Boleto')]"
-                    await page.click(emitir_sel)
+                    await click_element(page, emitir_sel)
                     await page.wait_for_timeout(3000)
                     
                     # Passo 2: Fill Boleto Details Form
@@ -228,7 +240,7 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                         
                     # Click next (Avançar)
                     avancar_sel = "xpath=//input[contains(@value, 'Avançar') or contains(@id, 'botaoAvancar') or @type='submit']"
-                    await page.click(avancar_sel)
+                    await click_element(page, avancar_sel)
                     await page.wait_for_timeout(3000)
                     
                     # Passo 3: Pagador Search & Selection
@@ -240,7 +252,7 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                     popup = None
                     try:
                         async with context.expect_page(timeout=10000) as page_info:
-                            await page.click(lista_pagadores_sel)
+                            await click_element(page, lista_pagadores_sel)
                         popup = await page_info.value
                     except Exception:
                         if len(context.pages) > 1:
@@ -255,17 +267,17 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                     await target_page.fill(search_cnpj_sel, cnpj_cpf)
                     
                     buscar_btn_sel = "xpath=//input[contains(@value, 'Buscar') or contains(@value, 'Pesquisar') or contains(@id, 'btnBuscar') or contains(@id, 'botaoBuscar')]"
-                    await target_page.click(buscar_btn_sel)
+                    await click_element(target_page, buscar_btn_sel)
                     await target_page.wait_for_timeout(2000)
                     
                     # Select the client from search results
                     select_client_sel = "xpath=//a[contains(normalize-space(.), 'Selecionar') or contains(normalize-space(.), 'OK') or contains(@id, 'lnkSelecionar')]"
-                    await target_page.click(select_client_sel)
+                    await click_element(target_page, select_client_sel)
                     await page.wait_for_timeout(2000)
                     
                     # Click Avançar/Confirmar to generate the boleto
                     confirmar_sel = "xpath=//input[contains(@value, 'Avançar') or contains(@value, 'Avancar') or contains(@value, 'Confirmar') or contains(@value, 'Emitir') or contains(@value, 'Gerar') or contains(@id, 'botaoConfirmar') or contains(@id, 'botaoAvancar') or @type='submit']"
-                    await page.click(confirmar_sel)
+                    await click_element(page, confirmar_sel)
                     await page.wait_for_timeout(4000)
                     
                     # Save generated PDF using "Salvar como arquivo" button
@@ -276,7 +288,7 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                     popup_save = None
                     try:
                         async with context.expect_page(timeout=10000) as page_info:
-                            await page.click(salvar_arquivo_sel)
+                            await click_element(page, salvar_arquivo_sel)
                         popup_save = await page_info.value
                     except Exception:
                         if len(context.pages) > 1:
@@ -297,7 +309,7 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                     pdf_path = os.path.join(invoice_folder, filename)
                     
                     async with page.expect_download(timeout=30000) as download_info:
-                        await target_save_page.click(pdf_option_sel)
+                        await click_element(target_save_page, pdf_option_sel)
                     download = await download_info.value
                     await download.save_as(pdf_path)
                     
