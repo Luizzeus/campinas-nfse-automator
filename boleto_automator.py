@@ -19,20 +19,14 @@ os.makedirs(SCREENSHOTS_DIR, exist_ok=True)
 BRADESCO_LOGIN_URL = "https://www.ne12.bradesconetempresa.b.br/ibpjlogin/login.jsf"
 
 def get_due_date_for_client(ref_date, due_day):
-    """Calculate the due date (DD/MM/YYYY) for the month following the competence."""
-    comp_info = get_competence_info(ref_date)
-    competence = comp_info["month_year_short"] # MM/YYYY
-    month, year = [int(p) for p in competence.split("/")]
+    """Calculate the due date (DD/MM/YYYY) for the current month of execution."""
+    today = ref_date or datetime.date.today()
+    month = today.month
+    year = today.year
     
-    # Calculate next month (due date month)
-    if month == 12:
-        due_month, due_year = 1, year + 1
-    else:
-        due_month, due_year = month + 1, year
-        
-    days_in_month = monthrange(due_year, due_month)[1]
+    days_in_month = monthrange(year, month)[1]
     day = min(int(due_day or 10), days_in_month)
-    return f"{day:02d}", f"{due_month:02d}", f"{due_year}"
+    return f"{day:02d}", f"{month:02d}", f"{year}"
 
 async def wait_for_bradesco_logged_in(page, timeout_ms=180000):
     """Wait for the user to solve 2FA and login successfully."""
@@ -78,9 +72,10 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
     
     comp_info = get_competence_info(ref_date)
     folder_name = comp_info["month_year_short"].replace("/", "-")
-    boleto_folder = os.path.join(BOLETOS_DIR, folder_name)
+    INVOICES_DIR = os.path.join(BASE_DIR, "invoices")
+    invoice_folder = os.path.join(INVOICES_DIR, folder_name)
     screenshot_folder = os.path.join(SCREENSHOTS_DIR, folder_name)
-    os.makedirs(boleto_folder, exist_ok=True)
+    os.makedirs(invoice_folder, exist_ok=True)
     os.makedirs(screenshot_folder, exist_ok=True)
     
     async def log_progress(msg, status="info", client_id=None, boleto_url=None):
@@ -192,8 +187,17 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                     # 4. Multa e Juros
                     # Multa: Select %, Value 2,00, Days 1
                     multa_sel = "xpath=//select[contains(@id, 'multa') or contains(@id, 'tipoMulta')]"
+                    # Multa e Juros
+                    # Multa: Select %, Value 2,00, Days 1
+                    multa_sel = "xpath=//select[contains(@id, 'multa') or contains(@id, 'tipoMulta')]"
                     if await page.locator(multa_sel).count() > 0:
-                        await page.select_option(multa_sel, label="%")
+                        try:
+                            await page.select_option(multa_sel, label="%")
+                        except Exception:
+                            try:
+                                await page.select_option(multa_sel, value="2")
+                            except Exception:
+                                pass
                     
                     multa_val_sel = "xpath=//input[contains(@id, 'vlMulta') or contains(@id, 'pctMulta')]"
                     if await page.locator(multa_val_sel).count() > 0:
@@ -206,7 +210,13 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                     # Juros: Select %, Value 1,00, Days 1
                     juros_sel = "xpath=//select[contains(@id, 'juros') or contains(@id, 'tipoJuros')]"
                     if await page.locator(juros_sel).count() > 0:
-                        await page.select_option(juros_sel, label="%")
+                        try:
+                            await page.select_option(juros_sel, label="%")
+                        except Exception:
+                            try:
+                                await page.select_option(juros_sel, value="1")
+                            except Exception:
+                                pass
                         
                     juros_val_sel = "xpath=//input[contains(@id, 'vlJuros') or contains(@id, 'pctJuros')]"
                     if await page.locator(juros_val_sel).count() > 0:
@@ -225,27 +235,26 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                     await log_progress("Selecionando pagador (cliente)...", "running")
                     
                     # Click "Lista de pagadores"
-                    lista_pagadores_sel = "xpath=//a[contains(normalize-space(.), 'Lista de pagadores')]"
-                    await page.click(lista_pagadores_sel)
-                    await page.wait_for_timeout(2000)
+                    lista_pagadores_sel = "xpath=//a[contains(normalize-space(.), 'Lista de pagadores') or contains(., 'Lista') or contains(., 'pagador')]"
                     
-                    # In the popup/dialog: search for client by CNPJ/CPF
                     popup = None
                     try:
-                        pages_before = len(context.pages)
-                        await page.wait_for_timeout(1000)
-                        if len(context.pages) > pages_before:
-                            popup = context.pages[-1]
+                        async with context.expect_page(timeout=10000) as page_info:
+                            await page.click(lista_pagadores_sel)
+                        popup = await page_info.value
                     except Exception:
-                        pass
-                        
+                        if len(context.pages) > 1:
+                            popup = context.pages[-1]
+                            
                     target_page = popup if popup else page
+                    await target_page.bring_to_front()
+                    await target_page.wait_for_timeout(2000)
                     
                     # Search by CNPJ/CPF inside the search window/element
                     search_cnpj_sel = "xpath=//input[contains(@id, 'cnpj') or contains(@id, 'cpf') or contains(@name, 'cnpj') or contains(@name, 'cpf')]"
                     await target_page.fill(search_cnpj_sel, cnpj_cpf)
                     
-                    buscar_btn_sel = "xpath=//input[contains(@value, 'Buscar') or contains(@id, 'btnBuscar') or contains(@id, 'botaoBuscar')]"
+                    buscar_btn_sel = "xpath=//input[contains(@value, 'Buscar') or contains(@value, 'Pesquisar') or contains(@id, 'btnBuscar') or contains(@id, 'botaoBuscar')]"
                     await target_page.click(buscar_btn_sel)
                     await target_page.wait_for_timeout(2000)
                     
@@ -255,22 +264,40 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                     await page.wait_for_timeout(2000)
                     
                     # Click Avançar/Confirmar to generate the boleto
-                    gerar_boleto_sel = "xpath=//input[contains(@value, 'Confirmar') or contains(@value, 'Gerar') or contains(@id, 'botaoConfirmar')]"
-                    await page.click(gerar_boleto_sel)
+                    confirmar_sel = "xpath=//input[contains(@value, 'Avançar') or contains(@value, 'Avancar') or contains(@value, 'Confirmar') or contains(@value, 'Emitir') or contains(@value, 'Gerar') or contains(@id, 'botaoConfirmar') or contains(@id, 'botaoAvancar') or @type='submit']"
+                    await page.click(confirmar_sel)
                     await page.wait_for_timeout(4000)
                     
-                    # Download generated PDF
-                    await log_progress("Baixando o PDF do boleto gerado...", "running")
+                    # Save generated PDF using "Salvar como arquivo" button
+                    await log_progress("Acessando arquivo de boleto para download...", "running")
+                    salvar_arquivo_sel = "xpath=//*[self::a or self::button or self::input][contains(normalize-space(.), 'Salvar como') or contains(normalize-space(.), 'salvar') or contains(@id, 'salvar') or contains(@id, 'Salvar')]"
                     
+                    # Wait for the file saving options popup
+                    popup_save = None
+                    try:
+                        async with context.expect_page(timeout=10000) as page_info:
+                            await page.click(salvar_arquivo_sel)
+                        popup_save = await page_info.value
+                    except Exception:
+                        if len(context.pages) > 1:
+                            popup_save = context.pages[-1]
+                            
+                    target_save_page = popup_save if popup_save else page
+                    await target_save_page.bring_to_front()
+                    await target_save_page.wait_for_timeout(2000)
+                    
+                    # Click "pdf" option inside the popup to download the PDF file
+                    await log_progress("Iniciando download do PDF do boleto...", "running")
+                    pdf_option_sel = "xpath=//*[self::a or self::button or self::input][contains(normalize-space(.), 'pdf') or contains(normalize-space(.), 'PDF') or contains(normalize-space(text()), 'PDF') or contains(normalize-space(text()), 'pdf')]"
+                    
+                    # Capture the download
+                    date_for_filename = datetime.date.today().strftime("%d-%m-%Y")
                     slug_client = slugify_name(client_name)
-                    filename = f"bradesco_{slug_client}_{invoice_number}.pdf"
-                    pdf_path = os.path.join(boleto_folder, filename)
-                    
-                    # Wait for download event when clicking visual/print button
-                    visualizar_btn_sel = "xpath=//a[contains(normalize-space(.), 'Visualizar') or contains(normalize-space(.), 'Imprimir') or contains(@id, 'btnVisualizar')]"
+                    filename = f"Boleto_{slug_client}_{invoice_number}_{date_for_filename}.pdf"
+                    pdf_path = os.path.join(invoice_folder, filename)
                     
                     async with page.expect_download(timeout=30000) as download_info:
-                        await page.click(visualizar_btn_sel)
+                        await target_save_page.click(pdf_option_sel)
                     download = await download_info.value
                     await download.save_as(pdf_path)
                     
@@ -285,7 +312,7 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                     conn.commit()
                     conn.close()
                     
-                    boleto_url = f"/invoices/{folder_name}/{filename}".replace("/invoices/", "/boletos/")
+                    boleto_url = f"/invoices/{folder_name}/{filename}"
                     await log_progress(f"Boleto gerado e salvo com sucesso para {client_name}!", "success", boleto_url=boleto_url)
                     
                 except Exception as ex:
