@@ -1385,7 +1385,57 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
                         }
                     """, cnpj_field)
                     
-                    await page.wait_for_timeout(4000) # Wait for AJAX load
+                    await page.wait_for_timeout(1000)
+                    
+                    # Click the "Pesquisar" button next to CNPJ field
+                    await log_progress("Acionando botão de pesquisa do Tomador...", "running", client_id)
+                    search_result = await page.evaluate("""
+                        () => {
+                            const cnpjInput = document.querySelector('input[id*="CpfCnpj"], input[name*="CpfCnpj"]');
+                            if (!cnpjInput) return { success: false, error: 'CNPJ input not found' };
+                            
+                            // Look in the same container
+                            const parent = cnpjInput.closest('.ui-g-12, .ui-g, .form-group, tr, div');
+                            let btn = null;
+                            if (parent) {
+                                btn = parent.querySelector('button, a, input[type="button"]');
+                            }
+                            
+                            // Fallback: search globally
+                            if (!btn) {
+                                const buttons = Array.from(document.querySelectorAll('button, a, input[type="button"], span.ui-button-text'));
+                                btn = buttons.find(b => {
+                                    const txt = (b.innerText || b.textContent || '').toLowerCase();
+                                    const id = (b.id || '').toLowerCase();
+                                    const name = (b.name || '').toLowerCase();
+                                    const title = (b.getAttribute('title') || '').toLowerCase();
+                                    const onclick = (b.getAttribute('onclick') || '').toLowerCase();
+                                    const className = (b.className || '').toLowerCase();
+                                    
+                                    return txt.includes('pesquisar') || txt.includes('consultar') || txt.includes('buscar') ||
+                                           id.includes('pesq') || id.includes('cons') || id.includes('busc') ||
+                                           name.includes('pesq') || name.includes('cons') || name.includes('busc') ||
+                                           title.includes('pesq') || title.includes('cons') ||
+                                           onclick.includes('pesq') || onclick.includes('cons') ||
+                                           className.includes('search') || className.includes('pesq');
+                                });
+                            }
+                            
+                            if (btn) {
+                                btn.click();
+                                return { success: true, tag: btn.tagName.toLowerCase(), text: btn.innerText || btn.textContent || '' };
+                            }
+                            return { success: false, error: 'Search button not found' };
+                        }
+                    """)
+                    
+                    if search_result and search_result.get("success"):
+                        await log_progress(f"Botão de pesquisa clicado com sucesso ({search_result.get('text')})", "success", client_id)
+                    else:
+                        await log_progress(f"Alerta: botão de pesquisa do tomador não localizado: {search_result.get('error') if search_result else 'retorno vazio'}", "warning", client_id)
+                        
+                    await page.wait_for_timeout(4000) # Wait for AJAX load of tomador details
+
 
 
                     
