@@ -1306,9 +1306,30 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
                     
                     # Fill CNPJ/CPF of tomador
                     cnpj_field_sel = 'xpath=//input[contains(@id, "CpfCnpj") or contains(@name, "CpfCnpj")]'
-                    cnpj_field = await fill_first_visible(page, cnpj_field_sel, client_cnpj, timeout_ms=10000)
+                    cnpj_field = await first_visible_locator(page, cnpj_field_sel, timeout_ms=10000, require_enabled=True)
+                    await cnpj_field.click()
+                    # Clear it first using focus and select_all
+                    await page.keyboard.press("Control+A")
+                    await page.keyboard.press("Backspace")
+                    # Type the CNPJ character by character
+                    await cnpj_field.press_sequentially(client_cnpj, delay=100)
+                    await page.wait_for_timeout(500)
                     await cnpj_field.press("Tab")
-                    await page.wait_for_timeout(3000) # Wait for AJAX load
+                    
+                    # Manually dispatch events to force PrimeFaces/jQuery autocomplete & AJAX triggers
+                    await page.evaluate("""
+                        (sel) => {
+                            const el = document.querySelector(sel);
+                            if (el) {
+                                el.dispatchEvent(new Event('input', { bubbles: true }));
+                                el.dispatchEvent(new Event('change', { bubbles: true }));
+                                el.dispatchEvent(new Event('blur', { bubbles: true }));
+                            }
+                        }
+                    """, cnpj_field_sel)
+                    
+                    await page.wait_for_timeout(4000) # Wait for AJAX load
+
                     
                     # Select Atividade do cadastro econômico (CNAE/Serviço)
                     await log_progress("Selecionando atividade econômica (620400001 - Consultoria em TI)...", "running", client_id)
