@@ -1387,66 +1387,70 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
                     
                     await page.wait_for_timeout(1000)
                     
+
                     # Click the "Pesquisar" button next to CNPJ field
                     await log_progress("Acionando botão de pesquisa do Tomador...", "running", client_id)
-                    search_result = await page.evaluate("""
-                        () => {
-                            const cnpjInput = document.querySelector('input[id*="CpfCnpj"], input[name*="CpfCnpj"]');
-                            if (!cnpjInput) return { success: false, error: 'CNPJ input not found' };
+                    search_selectors = [
+                        "xpath=//button[contains(@id, 'pesquisar') or contains(@id, 'Pesquisar') or contains(., 'Pesquisar')]",
+                        "xpath=//*[contains(@id, 'tomador') or contains(@class, 'tomador') or contains(., 'Tomador')]//button[contains(., 'Pesquisar') or contains(., 'Pesq')]",
+                        "xpath=//button[contains(., 'Pesquisar')]",
+                        "xpath=//button[contains(., 'Pesq')]"
+                    ]
+                    clicked_search = False
+                    for sel in search_selectors:
+                        try:
+                            loc = page.locator(sel)
+                            if await loc.count() > 0:
+                                for index in range(await loc.count()):
+                                    item = loc.nth(index)
+                                    if await item.is_visible():
+                                        btn_text = (await item.inner_text()).strip()
+                                        # Skip menu button
+                                        if btn_text.lower() == "menu":
+                                            continue
+                                        await log_progress(f"Clicando no botão de pesquisa do Tomador: '{btn_text}'", "running", client_id)
+                                        await item.click()
+                                        clicked_search = True
+                                        break
+                                if clicked_search:
+                                    break
+                        except Exception:
+                            continue
                             
-                            // Look in the same container
-                            const parent = cnpjInput.closest('.ui-g-12, .ui-g, .form-group, tr, div');
-                            let btn = null;
-                            if (parent) {
-                                btn = parent.querySelector('button, a, input[type="button"]');
-                            }
-                            
-                            // Fallback: search globally
-                            if (!btn) {
-                                const buttons = Array.from(document.querySelectorAll('button, a, input[type="button"], span.ui-button-text'));
-                                btn = buttons.find(b => {
-                                    const txt = (b.innerText || b.textContent || '').toLowerCase();
-                                    const id = (b.id || '').toLowerCase();
-                                    const name = (b.name || '').toLowerCase();
-                                    const title = (b.getAttribute('title') || '').toLowerCase();
-                                    const onclick = (b.getAttribute('onclick') || '').toLowerCase();
-                                    const className = (b.className || '').toLowerCase();
-                                    
-                                    return txt.includes('pesquisar') || txt.includes('consultar') || txt.includes('buscar') ||
-                                           id.includes('pesq') || id.includes('cons') || id.includes('busc') ||
-                                           name.includes('pesq') || name.includes('cons') || name.includes('busc') ||
-                                           title.includes('pesq') || title.includes('cons') ||
-                                           onclick.includes('pesq') || onclick.includes('cons') ||
-                                           className.includes('search') || className.includes('pesq');
-                                });
-                            }
-                            
-                            if (btn) {
-                                btn.click();
-                                return { success: true, tag: btn.tagName.toLowerCase(), text: btn.innerText || btn.textContent || '' };
-                            }
-                            return { success: false, error: 'Search button not found' };
-                        }
-                    """)
-                    
-                    if search_result and search_result.get("success"):
-                        await log_progress(f"Botão de pesquisa clicado com sucesso ({search_result.get('text')})", "success", client_id)
+                    if clicked_search:
+                        await log_progress("Botão de pesquisa do Tomador clicado com sucesso.", "success", client_id)
                     else:
-                        await log_progress(f"Alerta: botão de pesquisa do tomador não localizado: {search_result.get('error') if search_result else 'retorno vazio'}", "warning", client_id)
+                        await log_progress("Alerta: não consegui localizar o botão de pesquisa do tomador.", "warning", client_id)
                         
                     await page.wait_for_timeout(4000) # Wait for AJAX load of tomador details
                     
                     # Check if "Inserir" button is visible under Dados Cadastrais and click it to bind/add the tomador to the invoice
-                    inserir_sel = "xpath=//button[contains(., 'Inserir') or contains(text(), 'Inserir')]"
-                    try:
-                        inserir_btn = page.locator(inserir_sel)
-                        if await inserir_btn.count() > 0 and await inserir_btn.first.is_visible():
-                            await log_progress("Botão 'Inserir' do Tomador detectado (tomador de fora). Vinculando tomador à nota...", "running", client_id)
-                            await inserir_btn.first.click()
-                            await page.wait_for_timeout(3000) # Wait for AJAX load of tomador association
-                            await log_progress("Tomador de fora vinculado com sucesso.", "success", client_id)
-                    except Exception as ie:
-                        await log_progress(f"Aviso ao tentar clicar no botão Inserir: {ie}", "warning", client_id)
+                    inserir_selectors = [
+                        "xpath=//button[contains(normalize-space(.), 'Inserir') or contains(normalize-space(text()), 'Inserir')]",
+                        "xpath=//*[contains(@id, 'cadastrais') or contains(@id, 'cadastro') or contains(., 'Dados Cadastrais')]//button[contains(., 'Inserir')]",
+                        "xpath=//button[contains(., 'Inserir')]"
+                    ]
+                    clicked_inserir = False
+                    for sel in inserir_selectors:
+                        try:
+                            loc = page.locator(sel)
+                            if await loc.count() > 0:
+                                for index in range(await loc.count()):
+                                    item = loc.nth(index)
+                                    if await item.is_visible():
+                                        await log_progress("Botão 'Inserir' do Tomador detectado (tomador de fora). Vinculando tomador à nota...", "running", client_id)
+                                        await item.click()
+                                        await page.wait_for_timeout(3000) # Wait for AJAX load of tomador association
+                                        clicked_inserir = True
+                                        break
+                                if clicked_inserir:
+                                    break
+                        except Exception:
+                            continue
+                            
+                    if clicked_inserir:
+                        await log_progress("Tomador de fora vinculado com sucesso.", "success", client_id)
+
 
 
 
