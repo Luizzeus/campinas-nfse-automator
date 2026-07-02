@@ -1461,9 +1461,9 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
                     
                     # Check if "Inserir" button is visible under Dados Cadastrais and click it to bind/add the tomador to the invoice
                     inserir_selectors = [
-                        "xpath=//button[contains(normalize-space(.), 'Inserir') or contains(normalize-space(text()), 'Inserir')]",
-                        "xpath=//*[contains(@id, 'cadastrais') or contains(@id, 'cadastro') or contains(., 'Dados Cadastrais')]//button[contains(., 'Inserir')]",
-                        "xpath=//button[contains(., 'Inserir')]"
+                        "xpath=//*[self::button or self::a][contains(normalize-space(.), 'Inserir') or contains(normalize-space(text()), 'Inserir')]",
+                        "xpath=//*[contains(@id, 'cadastrais') or contains(@id, 'cadastro') or contains(., 'Dados Cadastrais')]//*[self::button or self::a][contains(., 'Inserir')]",
+                        "xpath=//*[self::button or self::a][contains(., 'Inserir')]"
                     ]
                     clicked_inserir = False
                     for sel in inserir_selectors:
@@ -1561,13 +1561,14 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
                     taxes_to_zero.extend(["ISS", "ISSQN"])
                 
                 for imp in taxes_to_zero:
-                    imp_sel = f"xpath=//div[.//h3[contains(.,'Reten') or contains(.,'reten')]]//table//tr[td[1][contains(normalize-space(.), '{imp}')]]//td[3]//input"
-                    if await page.locator(imp_sel).count() > 0:
-                        val = await page.locator(imp_sel).first.input_value()
-                        if val != "0,00" and val != "0.00":
-                            await page.locator(imp_sel).first.fill("0,00")
-                            await page.locator(imp_sel).first.press("Tab")
-                            await page.wait_for_timeout(300)
+                    for col_idx in [2, 3]:
+                        imp_sel = f"xpath=//div[.//h3[contains(.,'Reten') or contains(.,'reten')]]//table//tr[td[1][contains(normalize-space(.), '{imp}')]]//td[{col_idx}]//input"
+                        if await page.locator(imp_sel).count() > 0:
+                            val = await page.locator(imp_sel).first.input_value()
+                            if val not in ["0,00", "0.00", "0,0000", "0.0000"]:
+                                await page.locator(imp_sel).first.fill("0,00")
+                                await page.locator(imp_sel).first.press("Tab")
+                                await page.wait_for_timeout(300)
                 
                 await page.wait_for_timeout(1000)
                 
