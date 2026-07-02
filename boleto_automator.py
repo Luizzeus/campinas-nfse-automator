@@ -48,12 +48,22 @@ async def wait_for_bradesco_logged_in(page, timeout_ms=180000):
                 pass
         await page.wait_for_timeout(1000)
     return False
+async def remove_overlays(page):
+    """Remove any modal overlays or windows blocking input in the DOM."""
+    try:
+        await page.evaluate("""() => {
+            document.querySelectorAll('.jqmOverlay, .jqmWindow, [class*="Overlay"], [class*="modal"], [id*="Overlay"], [id*="jqm"]').forEach(el => el.remove());
+        }""")
+    except Exception:
+        pass
+
 async def click_element(page, selector, timeout_ms=15000):
-    """Click an element, using force=True and falling back to JS click to bypass overlays."""
+    """Click an element, falling back to JS click to bypass overlays if standard click fails or is blocked."""
     locator = page.locator(selector).first
     try:
         await locator.wait_for(state="attached", timeout=timeout_ms)
-        await locator.click(force=True, timeout=5000)
+        # Standard click (will throw if blocked/intercepted, allowing fallback to JS click)
+        await locator.click(timeout=5000)
     except Exception:
         try:
             await locator.evaluate("(el) => el.click()")
@@ -150,6 +160,7 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                 try:
                     # Navigate to "Cobrança" tab
                     await log_progress("Navegando para o menu Cobrança...", "running")
+                    await remove_overlays(page)
                     cobrança_sel = "xpath=//a[normalize-space()='Cobrança' or contains(normalize-space(.), 'Cobrança')]"
                     await click_element(page, cobrança_sel)
                     await page.wait_for_timeout(3000)
