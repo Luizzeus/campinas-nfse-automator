@@ -1307,7 +1307,7 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
                     # Select Atividade do cadastro econômico (CNAE/Serviço) first
                     await log_progress("Selecionando atividade econômica (620400001 - Consultoria em TI)...", "running", client_id)
                     activity_result = await page.evaluate("""
-                        (code) => {
+                        async (code) => {
                             const selects = Array.from(document.querySelectorAll('select'));
                             let targetSelect = null;
                             for (const sel of selects) {
@@ -1334,23 +1334,58 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
                                     }
                                 }
                             }
-                            if (targetSelect) {
+                            if (!targetSelect) return { success: false, error: 'Select dropdown element not found' };
+                            
+                            const container = targetSelect.closest('.ui-selectonemenu');
+                            if (!container) {
                                 const option = Array.from(targetSelect.options).find(opt => opt.value.includes(code) || opt.text.includes(code));
                                 if (option) {
                                     targetSelect.value = option.value;
                                     targetSelect.dispatchEvent(new Event('change'));
-                                    return { success: true, value: option.value, text: option.text };
-                                } else {
-                                    if (targetSelect.options.length > 1) {
-                                        const val = targetSelect.options[1].value;
-                                        targetSelect.value = val;
-                                        targetSelect.dispatchEvent(new Event('change'));
-                                        return { success: true, value: val, text: targetSelect.options[1].text, warning: 'Target code not found, selected first option' };
-                                    }
+                                    return { success: true, method: 'raw select', text: option.text };
                                 }
-                                return { success: false, error: 'No options inside select' };
+                                return { success: false, error: 'Container not found and raw option not found' };
                             }
-                            return { success: false, error: 'Select dropdown element not found' };
+                            
+                            const labelEl = container.querySelector('.ui-selectonemenu-label') || container;
+                            labelEl.click();
+                            
+                            const panelId = container.id ? container.id + '_panel' : '';
+                            let panel = panelId ? document.getElementById(panelId) : null;
+                            
+                            if (!panel) {
+                                panel = Array.from(document.querySelectorAll('.ui-selectonemenu-panel'))
+                                    .find(p => p.style.display !== 'none');
+                            }
+                            
+                            if (!panel) {
+                                await new Promise(r => setTimeout(r, 600));
+                                panel = panelId ? document.getElementById(panelId) : null;
+                                if (!panel) {
+                                    panel = Array.from(document.querySelectorAll('.ui-selectonemenu-panel'))
+                                        .find(p => p.style.display !== 'none');
+                                }
+                            }
+                            
+                            if (!panel) return { success: false, error: 'Dropdown panel overlay not found' };
+                            
+                            const items = Array.from(panel.querySelectorAll('li.ui-selectonemenu-item'));
+                            const targetItem = items.find(item => {
+                                const txt = item.innerText || item.textContent || '';
+                                return txt.includes(code);
+                            });
+                            
+                            if (targetItem) {
+                                targetItem.click();
+                                return { success: true, method: 'visual click', text: targetItem.innerText || targetItem.textContent || '' };
+                            } else {
+                                const fallbackItem = items.find(item => (item.innerText || item.textContent || '').trim() !== '');
+                                if (fallbackItem) {
+                                    fallbackItem.click();
+                                    return { success: true, method: 'visual click fallback', text: fallbackItem.innerText || fallbackItem.textContent || '', warning: 'Target code not found in visual list' };
+                                }
+                            }
+                            return { success: false, error: 'Option list item not found in overlay panel' };
                         }
                     """, "620400001")
                     
@@ -1391,10 +1426,10 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
                     # Click the "Pesquisar" button next to CNPJ field
                     await log_progress("Acionando botão de pesquisa do Tomador...", "running", client_id)
                     search_selectors = [
-                        "xpath=//button[contains(@id, 'pesquisar') or contains(@id, 'Pesquisar') or contains(., 'Pesquisar')]",
-                        "xpath=//*[contains(@id, 'tomador') or contains(@class, 'tomador') or contains(., 'Tomador')]//button[contains(., 'Pesquisar') or contains(., 'Pesq')]",
-                        "xpath=//button[contains(., 'Pesquisar')]",
-                        "xpath=//button[contains(., 'Pesq')]"
+                        "xpath=//*[self::button or self::a][contains(@id, 'pesquisar') or contains(@id, 'Pesquisar') or contains(., 'Pesquisar')]",
+                        "xpath=//*[contains(@id, 'tomador') or contains(@class, 'tomador') or contains(., 'Tomador')]//*[self::button or self::a][contains(., 'Pesquisar') or contains(., 'Pesq')]",
+                        "xpath=//*[self::button or self::a][contains(., 'Pesquisar')]",
+                        "xpath=//*[self::button or self::a][contains(., 'Pesq')]"
                     ]
                     clicked_search = False
                     for sel in search_selectors:
