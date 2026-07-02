@@ -384,7 +384,7 @@ async def ensure_emission_menu_ready(page, timeout_ms=30000):
     async def portal_ready():
         try:
             direct_links = page.locator(
-                "xpath=//*[self::a or self::button][contains(@onclick, 'emissaoNotaFiscalList') or contains(@href, 'emissaoNotaFiscalList') or contains(normalize-space(), 'Emitir Nota Fiscal')]"
+                "xpath=//*[contains(@onclick, 'emissaoNotaFiscalList') or contains(@href, 'emissaoNotaFiscalList') or contains(normalize-space(), 'Emitir Nota Fiscal')]"
             )
             if await direct_links.count():
                 for index in range(await direct_links.count()):
@@ -426,7 +426,7 @@ async def open_emission_page(page, timeout_ms=30000):
                     const rect = el.getBoundingClientRect();
                     return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
                 };
-                const nodes = Array.from(document.querySelectorAll('a,button'));
+                const nodes = Array.from(document.querySelectorAll('a,button,span,div,li'));
                 const matched = nodes.filter((el) => {
                     const txt = (el.innerText || el.textContent || '').replace(/\\s+/g, ' ').trim();
                     const onclick = el.getAttribute('onclick') || '';
@@ -470,8 +470,8 @@ async def open_emission_page(page, timeout_ms=30000):
 
     # Last resort: locate by visible text or onclick using Playwright locators.
     fallback_selectors = [
-        "xpath=//*[self::a or self::button][contains(@onclick, 'emissaoNotaFiscalList') or contains(@href, 'emissaoNotaFiscalList')]",
-        "xpath=//*[self::a or self::button][normalize-space()='Emitir Nota Fiscal' or .//span[normalize-space()='Emitir Nota Fiscal']]",
+        "xpath=//*[contains(@onclick, 'emissaoNotaFiscalList') or contains(@href, 'emissaoNotaFiscalList')]",
+        "xpath=//*[normalize-space()='Emitir Nota Fiscal' or .//span[normalize-space()='Emitir Nota Fiscal']]",
     ]
     last_error = None
     for selector in fallback_selectors:
