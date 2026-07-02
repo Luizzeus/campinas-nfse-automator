@@ -1333,7 +1333,7 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
                     await log_progress("Nota clonada: mantendo Valor dos Serviços original da referência.", "info", client_id)
                 else:
                     await log_progress("Preenchendo Valor dos Serviços...", "running", client_id)
-                    valor_sel = "xpath=//label[contains(.,'Valor dos Serviços')]/following::input[1]"
+                    valor_sel = "xpath=(//*[contains(.,'Valor dos Serviços')]/following::input[not(@readonly) and not(@disabled)])[1]"
                     valor_field = await fill_first_visible(page, valor_sel, value_br, timeout_ms=10000)
                     await valor_field.press("Tab")
 
