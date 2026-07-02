@@ -1435,6 +1435,19 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
                         await log_progress(f"Alerta: botão de pesquisa do tomador não localizado: {search_result.get('error') if search_result else 'retorno vazio'}", "warning", client_id)
                         
                     await page.wait_for_timeout(4000) # Wait for AJAX load of tomador details
+                    
+                    # Check if "Inserir" button is visible under Dados Cadastrais and click it to bind/add the tomador to the invoice
+                    inserir_sel = "xpath=//button[contains(., 'Inserir') or contains(text(), 'Inserir')]"
+                    try:
+                        inserir_btn = page.locator(inserir_sel)
+                        if await inserir_btn.count() > 0 and await inserir_btn.first.is_visible():
+                            await log_progress("Botão 'Inserir' do Tomador detectado (tomador de fora). Vinculando tomador à nota...", "running", client_id)
+                            await inserir_btn.first.click()
+                            await page.wait_for_timeout(3000) # Wait for AJAX load of tomador association
+                            await log_progress("Tomador de fora vinculado com sucesso.", "success", client_id)
+                    except Exception as ie:
+                        await log_progress(f"Aviso ao tentar clicar no botão Inserir: {ie}", "warning", client_id)
+
 
 
 
