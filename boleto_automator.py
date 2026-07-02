@@ -257,12 +257,7 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                     await log_progress("Preenchendo detalhes do boleto...", "running")
                     
                     # 1. Document Number (same as NFS-e)
-                    doc_selectors = [
-                        "xpath=//input[contains(@id, 'numDocumento') or contains(@name, 'numDocumento') or contains(@id, 'NumeroDocumento') or contains(@id, 'txtNumero') or contains(@id, 'txtNroDoc')]",
-                        "xpath=//*[contains(text(), 'documento *') or contains(., 'documento *') or contains(text(), 'Documento *') or contains(., 'Documento *')]/following::input[1]",
-                        "xpath=//*[contains(text(), 'Número do documento') or contains(., 'Número do documento') or contains(text(), 'Numero do documento') or contains(., 'Numero do documento')]/following::input[1]",
-                        "xpath=//td[contains(., 'documento') or contains(., 'Documento')]/following::input[1]"
-                    ]
+                    doc_selectors = ["id=frm:txtSeuNumero"]
                     await fill_first_available(frame, doc_selectors, str(invoice_number))
                     
                     # 1.5. Emission Date (Data de Emissão - data atual)
@@ -270,10 +265,7 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                         today = ref_date or datetime.date.today()
                         day_em, month_em, year_em = f"{today.day:02d}", f"{today.month:02d}", f"{today.year}"
                         
-                        emissao_dia_selectors = [
-                            "xpath=//input[contains(@id, 'diaEmissao') or contains(@id, 'dtEmissaoDia') or contains(@id, 'txtDiaEmissao')]",
-                            "xpath=//*[contains(text(), 'Emissão') or contains(text(), 'Emissao') or contains(., 'Emissão') or contains(., 'Emissao')]/following::input[1]"
-                        ]
+                        emissao_dia_selectors = ["id=frm:boxCalendarioEmissaoDia"]
                         
                         # Only fill if the field is empty or "00"
                         dia_loc = frame.locator(emissao_dia_selectors[0]).first
@@ -285,14 +277,8 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                                 await log_progress(f"Data de emissão já preenchida com {current_val}. Mantendo.", "running")
                         
                         if not has_value:
-                            emissao_mes_selectors = [
-                                "xpath=//input[contains(@id, 'mesEmissao') or contains(@id, 'dtEmissaoMes') or contains(@id, 'txtMesEmissao')]",
-                                "xpath=//*[contains(text(), 'Emissão') or contains(text(), 'Emissao') or contains(., 'Emissão') or contains(., 'Emissao')]/following::input[2]"
-                            ]
-                            emissao_ano_selectors = [
-                                "xpath=//input[contains(@id, 'anoEmissao') or contains(@id, 'dtEmissaoAno') or contains(@id, 'txtAnoEmissao')]",
-                                "xpath=//*[contains(text(), 'Emissão') or contains(text(), 'Emissao') or contains(., 'Emissão') or contains(., 'Emissao')]/following::input[3]"
-                            ]
+                            emissao_mes_selectors = ["id=frm:boxCalendarioEmissaoMes"]
+                            emissao_ano_selectors = ["id=frm:boxCalendarioEmissaoAno"]
                             await fill_first_available(frame, emissao_dia_selectors, day_em, timeout_ms=2000)
                             await fill_first_available(frame, emissao_mes_selectors, month_em, timeout_ms=2000)
                             await fill_first_available(frame, emissao_ano_selectors, year_em, timeout_ms=2000)
@@ -310,70 +296,47 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                     day, month, year = get_due_date_for_client(ref_date, due_day)
                     await log_progress(f"Calculada data de vencimento: {day}/{month}/{year}", "running")
                     
-                    day_selectors = [
-                        "xpath=//input[contains(@id, 'diaVencimento') or contains(@id, 'dtVencimentoDia') or contains(@id, 'txtDiaVenc')]",
-                        "xpath=//*[contains(text(), 'Vencimento') or contains(., 'Vencimento')]/following::input[1]"
-                    ]
-                    month_selectors = [
-                        "xpath=//input[contains(@id, 'mesVencimento') or contains(@id, 'dtVencimentoMes') or contains(@id, 'txtMesVenc')]",
-                        "xpath=//*[contains(text(), 'Vencimento') or contains(., 'Vencimento')]/following::input[2]"
-                    ]
-                    year_selectors = [
-                        "xpath=//input[contains(@id, 'anoVencimento') or contains(@id, 'dtVencimentoAno') or contains(@id, 'txtAnoVenc')]",
-                        "xpath=//*[contains(text(), 'Vencimento') or contains(., 'Vencimento')]/following::input[3]"
-                    ]
+                    # Bradesco has separate vencimento input fields when QR Code is enabled vs disabled
+                    venc_dia_qrcode = frame.locator("id=frm:boxCalendarioVencimentoComQRCodeDia").first
+                    if await venc_dia_qrcode.count() > 0 and await venc_dia_qrcode.is_visible():
+                        day_selectors = ["id=frm:boxCalendarioVencimentoComQRCodeDia"]
+                        month_selectors = ["id=frm:boxCalendarioVencimentoComQRCodeMes"]
+                        year_selectors = ["id=frm:boxCalendarioVencimentoComQRCodeAno"]
+                    else:
+                        day_selectors = ["id=frm:boxCalendarioVencimentoDia"]
+                        month_selectors = ["id=frm:boxCalendarioVencimentoMes"]
+                        year_selectors = ["id=frm:boxCalendarioVencimentoAno"]
+                        
                     await fill_first_available(frame, day_selectors, day)
                     await fill_first_available(frame, month_selectors, month)
                     await fill_first_available(frame, year_selectors, year)
                     
                     # 3. Document Value (Valor do Documento)
-                    val_selectors = [
-                        "xpath=//input[contains(@id, 'valor') or contains(@id, 'vlDoc') or contains(@id, 'txtValor') or contains(@id, 'vlDocumento')]",
-                        "xpath=//*[contains(text(), 'Valor do Documento') or contains(., 'Valor do Documento')]/following::input[1]",
-                        "xpath=//*[contains(text(), 'Valor') or contains(., 'Valor')]/following::input[1]"
-                    ]
+                    val_selectors = ["id=frm:txtValorDocumento"]
                     val_str = f"{boleto_value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
                     await fill_first_available(frame, val_selectors, val_str)
                     
                     # 4. Multa e Juros
                     # Multa: Select %, Value 2,00, Days 1
-                    multa_selectors = [
-                        "xpath=//td[contains(normalize-space(.), 'Multa:') or contains(normalize-space(.), 'Multa')]/following::select[1]",
-                        "xpath=//select[contains(@id, 'multa') or contains(@id, 'tipoMulta') or contains(@id, 'selMulta')]"
-                    ]
-                    multa_val_selectors = [
-                        "xpath=//td[contains(normalize-space(.), 'Multa:') or contains(normalize-space(.), 'Multa')]/following::input[1]",
-                        "xpath=//input[contains(@id, 'vlMulta') or contains(@id, 'pctMulta') or contains(@id, 'txtMulta')]"
-                    ]
-                    multa_dias_selectors = [
-                        "xpath=//td[contains(normalize-space(.), 'Multa:') or contains(normalize-space(.), 'Multa')]/following::input[2]",
-                        "xpath=//input[contains(@id, 'diasMulta') or contains(@id, 'atrasoMulta')]"
-                    ]
+                    multa_selectors = ["id=frm:selectMulta"]
+                    multa_val_selectors = ["id=frm:textValorMulta"]
+                    multa_dias_selectors = ["id=frm:vencimentoMulta"]
                     
                     await select_dropdown_option(frame, multa_selectors, ["%", "percentual", "percent", "taxa"])
                     await fill_first_available(frame, multa_val_selectors, "2,00")
                     await fill_first_available(frame, multa_dias_selectors, "1")
                     
                     # Juros: Select %, Value 1,00, Days 1
-                    juros_selectors = [
-                        "xpath=//td[contains(normalize-space(.), 'Juros:') or contains(normalize-space(.), 'Juros')]/following::select[1]",
-                        "xpath=//select[contains(@id, 'juros') or contains(@id, 'tipoJuros') or contains(@id, 'selJuros')]"
-                    ]
-                    juros_val_selectors = [
-                        "xpath=//td[contains(normalize-space(.), 'Juros:') or contains(normalize-space(.), 'Juros')]/following::input[1]",
-                        "xpath=//input[contains(@id, 'vlJuros') or contains(@id, 'pctJuros') or contains(@id, 'txtJuros')]"
-                    ]
-                    juros_dias_selectors = [
-                        "xpath=//td[contains(normalize-space(.), 'Juros:') or contains(normalize-space(.), 'Juros')]/following::input[2]",
-                        "xpath=//input[contains(@id, 'diasJuros') or contains(@id, 'atrasoJuros')]"
-                    ]
+                    juros_selectors = ["id=frm:selectJuros"]
+                    juros_val_selectors = ["id=frm:textValorJuros"]
+                    juros_dias_selectors = ["id=frm:vencimentoJuros"]
                     
                     await select_dropdown_option(frame, juros_selectors, ["%", "percentual", "percent", "taxa"])
                     await fill_first_available(frame, juros_val_selectors, "1,00")
                     await fill_first_available(frame, juros_dias_selectors, "1")
                         
                     # Click next (Avançar)
-                    avancar_sel = "xpath=//input[contains(@value, 'Avançar') or contains(@id, 'botaoAvancar') or @type='submit']"
+                    avancar_sel = "id=frm:botaoAvancar"
                     await click_element(frame, avancar_sel)
                     await page.wait_for_timeout(3000)
                     
@@ -381,7 +344,7 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                     await log_progress("Selecionando pagador (cliente)...", "running")
                     
                     # Click "Lista de pagadores"
-                    lista_pagadores_sel = "xpath=//a[contains(normalize-space(.), 'Lista de pagadores') or contains(., 'Lista') or contains(., 'pagador')]"
+                    lista_pagadores_sel = "id=frm:linkListaPagadores"
                     
                     popup = None
                     try:
