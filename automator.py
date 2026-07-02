@@ -1304,6 +1304,9 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
                     else:
                         await log_progress("Cliente sem nota de referência. Preenchendo dados manualmente...", "running", client_id)
                     
+                    # Wait for form/widget initialization
+                    await page.wait_for_timeout(3000)
+                    
                     # Select Atividade do cadastro econômico (CNAE/Serviço) first
                     await log_progress("Selecionando atividade econômica (620400001 - Consultoria em TI)...", "running", client_id)
                     activity_result = await page.evaluate("""
@@ -1485,6 +1488,26 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
                             
                     if clicked_inserir:
                         await log_progress("Tomador de fora vinculado com sucesso.", "success", client_id)
+                        
+                    # Wait for AJAX reload of taxation details (when Alíquota and Valor ISS exit the '*****' loading state)
+                    await log_progress("Aguardando o portal calcular as alíquotas (saindo do estado '*****')...", "running", client_id)
+                    aliquota_sel = "xpath=(//*[contains(normalize-space(.), 'Alíquota')]/following::input)[1]"
+                    
+                    aliquota_loaded = False
+                    for attempt in range(15): # Wait up to 15 seconds
+                        try:
+                            val = await page.locator(aliquota_sel).first.input_value()
+                            if val and "*****" not in val:
+                                await log_progress(f"Alíquotas carregadas com sucesso: {val}", "success", client_id)
+                                aliquota_loaded = True
+                                break
+                        except Exception:
+                            pass
+                        await page.wait_for_timeout(1000)
+                        
+                    if not aliquota_loaded:
+                        await log_progress("Aviso: tempo esgotado aguardando carregamento das alíquotas. Prosseguindo...", "warning", client_id)
+
 
 
 
