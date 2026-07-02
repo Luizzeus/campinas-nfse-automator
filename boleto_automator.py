@@ -244,6 +244,15 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                     await click_element(frame, emitir_sel)
                     await page.wait_for_timeout(3000)
                     
+                    # Dump frame HTML for debugging
+                    try:
+                        html_content = await frame.content()
+                        with open("C:/Projetos/campinas-nfse-automator/frame_dom.html", "w", encoding="utf-8") as f:
+                            f.write(html_content)
+                        await log_progress("DOM do iframe salvo com sucesso em frame_dom.html!", "running")
+                    except Exception as e:
+                        await log_progress(f"Erro ao salvar DOM do iframe: {e}", "warning")
+                    
                     # Passo 2: Fill Boleto Details Form
                     await log_progress("Preenchendo detalhes do boleto...", "running")
                     
