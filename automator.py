@@ -171,8 +171,6 @@ async def fill_invoice_service_value(page, value_br, timeout_ms=15000):
                 }
                 
                 target.scrollIntoView({block: 'center', inline: 'nearest'});
-                document.querySelectorAll('[data-codex-service-value-target="1"]').forEach((el) => el.removeAttribute('data-codex-service-value-target'));
-                target.setAttribute('data-codex-service-value-target', '1');
                 return {
                     success: true,
                     value: target.value || '',
@@ -183,14 +181,18 @@ async def fill_invoice_service_value(page, value_br, timeout_ms=15000):
             }
         """)
         if last_result and last_result.get("success"):
-            field = page.locator('[data-codex-service-value-target="1"]').first
+            target_id = last_result.get("id")
+            field_sel = f'[id="{target_id}"]'
+            field = page.locator(field_sel).first
             await field.click()
             await page.keyboard.press("Control+A")
             await page.keyboard.press("Backspace")
             await field.press_sequentially(str(value_br), delay=80)
             await field.press("Tab")
-            await page.wait_for_timeout(1000)
-            current_value = await field.input_value()
+            await page.wait_for_timeout(2000)
+            
+            # Re-locate the input element using the ID selector (which automatically finds the newly rendered element after AJAX)
+            current_value = await page.locator(field_sel).first.input_value()
             current_digits = re.sub(r"\D+", "", str(current_value or ""))
             if current_digits == expected_digits:
                 last_result["value"] = current_value
