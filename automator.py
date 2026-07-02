@@ -1318,15 +1318,14 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
                     
                     # Manually dispatch events to force PrimeFaces/jQuery autocomplete & AJAX triggers
                     await page.evaluate("""
-                        (sel) => {
-                            const el = document.querySelector(sel);
+                        (el) => {
                             if (el) {
                                 el.dispatchEvent(new Event('input', { bubbles: true }));
                                 el.dispatchEvent(new Event('change', { bubbles: true }));
                                 el.dispatchEvent(new Event('blur', { bubbles: true }));
                             }
                         }
-                    """, cnpj_field_sel)
+                    """, cnpj_field)
                     
                     await page.wait_for_timeout(4000) # Wait for AJAX load
 
