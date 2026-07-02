@@ -69,6 +69,45 @@ async def click_element(page, selector, timeout_ms=15000):
             await locator.evaluate("(el) => el.click()")
         except Exception as e:
             raise RuntimeError(f"Failed to click selector {selector}: {e}")
+async def fill_first_available(frame, selectors, value, timeout_ms=10000):
+    for selector in selectors:
+        try:
+            locator = frame.locator(selector).first
+            await locator.wait_for(state="attached", timeout=max(1000, timeout_ms // len(selectors)))
+            await locator.fill(value)
+            return True
+        except Exception:
+            pass
+    raise RuntimeError(f"None of the selectors in {selectors} could be filled with '{value}'")
+
+async def select_first_available(frame, selectors, label_or_val, timeout_ms=10000):
+    for selector in selectors:
+        try:
+            locator = frame.locator(selector).first
+            await locator.wait_for(state="attached", timeout=max(1000, timeout_ms // len(selectors)))
+            try:
+                await locator.select_option(label=label_or_val, timeout=2000)
+            except Exception:
+                await locator.select_option(value=label_or_val, timeout=2000)
+            return True
+        except Exception:
+            pass
+    raise RuntimeError(f"None of the selectors in {selectors} could select option '{label_or_val}'")
+
+async def click_first_available(frame, selectors, timeout_ms=15000):
+    for selector in selectors:
+        try:
+            locator = frame.locator(selector).first
+            await locator.wait_for(state="attached", timeout=max(1000, timeout_ms // len(selectors)))
+            try:
+                await locator.click(timeout=3000)
+            except Exception:
+                await locator.evaluate("(el) => el.click()")
+            return True
+        except Exception:
+            pass
+    raise RuntimeError(f"None of the selectors in {selectors} could be clicked")
+
 
 
 async def run_boleto_automation(emissions_to_process, ref_date=None, progress_callback=None):
@@ -188,76 +227,91 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                     await log_progress("Preenchendo detalhes do boleto...", "running")
                     
                     # 1. Document Number (same as NFS-e)
-                    doc_input_sel = "xpath=//input[contains(@id, 'numDocumento') or contains(@name, 'numDocumento') or contains(@id, 'NumeroDocumento') or contains(@id, 'txtNumero')]"
-                    if await frame.locator(doc_input_sel).count() == 0:
-                        doc_input_sel = "xpath=//td[contains(., 'Número do documento')]/following::input[1]"
-                    await frame.fill(doc_input_sel, str(invoice_number))
+                    doc_selectors = [
+                        "xpath=//input[contains(@id, 'numDocumento') or contains(@name, 'numDocumento') or contains(@id, 'NumeroDocumento') or contains(@id, 'txtNumero') or contains(@id, 'txtNroDoc')]",
+                        "xpath=//*[contains(text(), 'documento *') or contains(., 'documento *') or contains(text(), 'Documento *') or contains(., 'Documento *')]/following::input[1]",
+                        "xpath=//*[contains(text(), 'Número do documento') or contains(., 'Número do documento') or contains(text(), 'Numero do documento') or contains(., 'Numero do documento')]/following::input[1]",
+                        "xpath=//td[contains(., 'documento') or contains(., 'Documento')]/following::input[1]"
+                    ]
+                    await fill_first_available(frame, doc_selectors, str(invoice_number))
                     
                     # 2. Due Date (Vencimento)
                     day, month, year = get_due_date_for_client(ref_date, due_day)
                     await log_progress(f"Calculada data de vencimento: {day}/{month}/{year}", "running")
                     
-                    # Find day, month, year inputs
-                    day_sel = "xpath=//input[contains(@id, 'diaVencimento') or contains(@id, 'dtVencimentoDia') or contains(@id, 'txtDiaVenc')]"
-                    if await frame.locator(day_sel).count() == 0:
-                        day_sel = "xpath=//td[contains(., 'Vencimento')]/following::input[1]"
-                    await frame.fill(day_sel, day)
-                    
-                    month_sel = "xpath=//input[contains(@id, 'mesVencimento') or contains(@id, 'dtVencimentoMes') or contains(@id, 'txtMesVenc')]"
-                    if await frame.locator(month_sel).count() == 0:
-                        month_sel = "xpath=//td[contains(., 'Vencimento')]/following::input[2]"
-                    await frame.fill(month_sel, month)
-                    
-                    year_sel = "xpath=//input[contains(@id, 'anoVencimento') or contains(@id, 'dtVencimentoAno') or contains(@id, 'txtAnoVenc')]"
-                    if await frame.locator(year_sel).count() == 0:
-                        year_sel = "xpath=//td[contains(., 'Vencimento')]/following::input[3]"
-                    await frame.fill(year_sel, year)
+                    day_selectors = [
+                        "xpath=//input[contains(@id, 'diaVencimento') or contains(@id, 'dtVencimentoDia') or contains(@id, 'txtDiaVenc')]",
+                        "xpath=//*[contains(text(), 'Vencimento') or contains(., 'Vencimento')]/following::input[1]"
+                    ]
+                    month_selectors = [
+                        "xpath=//input[contains(@id, 'mesVencimento') or contains(@id, 'dtVencimentoMes') or contains(@id, 'txtMesVenc')]",
+                        "xpath=//*[contains(text(), 'Vencimento') or contains(., 'Vencimento')]/following::input[2]"
+                    ]
+                    year_selectors = [
+                        "xpath=//input[contains(@id, 'anoVencimento') or contains(@id, 'dtVencimentoAno') or contains(@id, 'txtAnoVenc')]",
+                        "xpath=//*[contains(text(), 'Vencimento') or contains(., 'Vencimento')]/following::input[3]"
+                    ]
+                    await fill_first_available(frame, day_selectors, day)
+                    await fill_first_available(frame, month_selectors, month)
+                    await fill_first_available(frame, year_selectors, year)
                     
                     # 3. Document Value (Valor do Documento)
-                    val_input_sel = "xpath=//input[contains(@id, 'valor') or contains(@id, 'vlDoc') or contains(@id, 'txtValor')]"
-                    if await frame.locator(val_input_sel).count() == 0:
-                        val_input_sel = "xpath=//*[contains(text(), 'Valor do Documento')]/following::input[1]"
+                    val_selectors = [
+                        "xpath=//input[contains(@id, 'valor') or contains(@id, 'vlDoc') or contains(@id, 'txtValor') or contains(@id, 'vlDocumento')]",
+                        "xpath=//*[contains(text(), 'Valor do Documento') or contains(., 'Valor do Documento')]/following::input[1]",
+                        "xpath=//*[contains(text(), 'Valor') or contains(., 'Valor')]/following::input[1]"
+                    ]
                     val_str = f"{boleto_value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-                    await frame.fill(val_input_sel, val_str)
+                    await fill_first_available(frame, val_selectors, val_str)
                     
                     # 4. Multa e Juros
                     # Multa: Select %, Value 2,00, Days 1
-                    multa_sel = "xpath=//select[contains(@id, 'multa') or contains(@id, 'tipoMulta')]"
-                    if await frame.locator(multa_sel).count() > 0:
-                        try:
-                            await frame.select_option(multa_sel, label="%")
-                        except Exception:
-                            try:
-                                await frame.select_option(multa_sel, value="2")
-                            except Exception:
-                                pass
+                    multa_selectors = [
+                        "xpath=//select[contains(@id, 'multa') or contains(@id, 'tipoMulta') or contains(@id, 'selMulta')]",
+                        "xpath=//*[contains(text(), 'Multa') or contains(., 'Multa')]/following::select[1]"
+                    ]
+                    multa_val_selectors = [
+                        "xpath=//input[contains(@id, 'vlMulta') or contains(@id, 'pctMulta') or contains(@id, 'txtMulta')]",
+                        "xpath=//*[contains(text(), 'Multa') or contains(., 'Multa')]/following::input[1]"
+                    ]
+                    multa_dias_selectors = [
+                        "xpath=//input[contains(@id, 'diasMulta') or contains(@id, 'atrasoMulta')]",
+                        "xpath=//*[contains(text(), 'Multa') or contains(., 'Multa')]/following::input[2]"
+                    ]
                     
-                    multa_val_sel = "xpath=//input[contains(@id, 'vlMulta') or contains(@id, 'pctMulta')]"
-                    if await frame.locator(multa_val_sel).count() > 0:
-                        await frame.fill(multa_val_sel, "2,00")
-                        
-                    multa_dias_sel = "xpath=//input[contains(@id, 'diasMulta') or contains(@id, 'atrasoMulta')]"
-                    if await frame.locator(multa_dias_sel).count() > 0:
-                        await frame.fill(multa_dias_sel, "1")
-                        
-                    # Juros: Select %, Value 1,00, Days 1
-                    juros_sel = "xpath=//select[contains(@id, 'juros') or contains(@id, 'tipoJuros')]"
-                    if await frame.locator(juros_sel).count() > 0:
+                    try:
+                        await select_first_available(frame, multa_selectors, "%")
+                    except Exception:
                         try:
-                            await frame.select_option(juros_sel, label="%")
+                            await select_first_available(frame, multa_selectors, "2")
                         except Exception:
-                            try:
-                                await frame.select_option(juros_sel, value="1")
-                            except Exception:
-                                pass
-                        
-                    juros_val_sel = "xpath=//input[contains(@id, 'vlJuros') or contains(@id, 'pctJuros')]"
-                    if await frame.locator(juros_val_sel).count() > 0:
-                        await frame.fill(juros_val_sel, "1,00")
-                        
-                    juros_dias_sel = "xpath=//input[contains(@id, 'diasJuros') or contains(@id, 'atrasoJuros')]"
-                    if await frame.locator(juros_dias_sel).count() > 0:
-                        await frame.fill(juros_dias_sel, "1")
+                            pass
+                    await fill_first_available(frame, multa_val_selectors, "2,00")
+                    await fill_first_available(frame, multa_dias_selectors, "1")
+                    
+                    # Juros: Select %, Value 1,00, Days 1
+                    juros_selectors = [
+                        "xpath=//select[contains(@id, 'juros') or contains(@id, 'tipoJuros') or contains(@id, 'selJuros')]",
+                        "xpath=//*[contains(text(), 'Juros') or contains(., 'Juros')]/following::select[1]"
+                    ]
+                    juros_val_selectors = [
+                        "xpath=//input[contains(@id, 'vlJuros') or contains(@id, 'pctJuros') or contains(@id, 'txtJuros')]",
+                        "xpath=//*[contains(text(), 'Juros') or contains(., 'Juros')]/following::input[1]"
+                    ]
+                    juros_dias_selectors = [
+                        "xpath=//input[contains(@id, 'diasJuros') or contains(@id, 'atrasoJuros')]",
+                        "xpath=//*[contains(text(), 'Juros') or contains(., 'Juros')]/following::input[2]"
+                    ]
+                    
+                    try:
+                        await select_first_available(frame, juros_selectors, "%")
+                    except Exception:
+                        try:
+                            await select_first_available(frame, juros_selectors, "1")
+                        except Exception:
+                            pass
+                    await fill_first_available(frame, juros_val_selectors, "1,00")
+                    await fill_first_available(frame, juros_dias_selectors, "1")
                         
                     # Click next (Avançar)
                     avancar_sel = "xpath=//input[contains(@value, 'Avançar') or contains(@id, 'botaoAvancar') or @type='submit']"
