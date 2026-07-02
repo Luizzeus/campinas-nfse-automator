@@ -67,13 +67,16 @@ def main():
             # DETACHED_PROCESS (0x00000008) | CREATE_NO_WINDOW (0x08000000)
             creationflags = 0x00000008 | 0x08000000
             
+        env = dict(os.environ)
+        env["PYTHONUNBUFFERED"] = "1"
         subprocess.Popen(
             [sys.executable, "-m", "uvicorn", "main:app", "--host", "127.0.0.1", "--port", str(port)],
             stdout=log_out,
             stderr=log_err,
             creationflags=creationflags,
             close_fds=True,
-            cwd=script_dir
+            cwd=script_dir,
+            env=env
         )
         # Dar tempo para inicializar
         time.sleep(3)
