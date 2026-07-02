@@ -1310,6 +1310,65 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
                     await cnpj_field.press("Tab")
                     await page.wait_for_timeout(3000) # Wait for AJAX load
                     
+                    # Select Atividade do cadastro econômico (CNAE/Serviço)
+                    await log_progress("Selecionando atividade econômica (620400001 - Consultoria em TI)...", "running", client_id)
+                    activity_result = await page.evaluate("""
+                        (code) => {
+                            const selects = Array.from(document.querySelectorAll('select'));
+                            let targetSelect = null;
+                            for (const sel of selects) {
+                                const id = (sel.id || '').toLowerCase();
+                                const name = (sel.name || '').toLowerCase();
+                                if (id.includes('atividade') || name.includes('atividade') || id.includes('cnae') || name.includes('cnae') || id.includes('servico') || name.includes('servico')) {
+                                    targetSelect = sel;
+                                    break;
+                                }
+                            }
+                            if (!targetSelect) {
+                                const labels = Array.from(document.querySelectorAll('label, span, td, div'));
+                                for (const el of labels) {
+                                    const text = el.innerText || el.textContent || '';
+                                    if (text.includes('Atividade') && text.includes('cadastro')) {
+                                        const parent = el.closest('.ui-g-12, .form-group, tr, div');
+                                        if (parent) {
+                                            const sel = parent.querySelector('select');
+                                            if (sel) {
+                                                targetSelect = sel;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            if (targetSelect) {
+                                const option = Array.from(targetSelect.options).find(opt => opt.value.includes(code) || opt.text.includes(code));
+                                if (option) {
+                                    targetSelect.value = option.value;
+                                    targetSelect.dispatchEvent(new Event('change'));
+                                    return { success: true, value: option.value, text: option.text };
+                                } else {
+                                    if (targetSelect.options.length > 1) {
+                                        const val = targetSelect.options[1].value;
+                                        targetSelect.value = val;
+                                        targetSelect.dispatchEvent(new Event('change'));
+                                        return { success: true, value: val, text: targetSelect.options[1].text, warning: 'Target code not found, selected first option' };
+                                    }
+                                }
+                                return { success: false, error: 'No options inside select' };
+                            }
+                            return { success: false, error: 'Select dropdown element not found' };
+                        }
+                    """, "620400001")
+                    
+                    if activity_result and activity_result.get("success"):
+                        warn = f" ({activity_result.get('warning')})" if activity_result.get('warning') else ""
+                        await log_progress(f"Atividade selecionada: {activity_result.get('text')}{warn}", "success", client_id)
+                    else:
+                        await log_progress(f"Não consegui selecionar a atividade automaticamente: {activity_result.get('error') if activity_result else 'retorno vazio'}", "warning", client_id)
+                    
+                    await page.wait_for_timeout(3000) # Wait for AJAX reload of taxation
+
+                    
                 # 5. Pre-fill note details
                 await log_progress(f"Ajustando competência da nota para {competence_str}...", "running", client_id)
                 _, applied_competence = await fill_competence_field(page, comp_info, timeout_ms=30000)
