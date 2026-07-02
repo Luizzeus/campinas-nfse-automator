@@ -725,6 +725,7 @@ def extract_invoice_number_from_text(text):
     if not text:
         return None
     patterns = [
+        r"\b(\d{3,})\s*/\s*[a-zA-Z]",
         r"N[uú]mero\s*/\s*S[ée]rie\s*([\d.]{3,})\s*/",
         r"N\s*[º°o]?\s*da\s*Nota\s*[:\-]?\s*([\d.]{3,})",
         r"N[uú]mero\s*da\s*Nota\s*[:\-]?\s*([\d.]{3,})",
