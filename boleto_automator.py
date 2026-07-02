@@ -257,24 +257,27 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                     await fill_first_available(frame, doc_selectors, str(invoice_number))
                     
                     # 1.5. Emission Date (Data de Emissão - data atual)
-                    today = ref_date or datetime.date.today()
-                    day_em, month_em, year_em = f"{today.day:02d}", f"{today.month:02d}", f"{today.year}"
-                    
-                    emissao_dia_selectors = [
-                        "xpath=//input[contains(@id, 'diaEmissao') or contains(@id, 'dtEmissaoDia') or contains(@id, 'txtDiaEmissao')]",
-                        "xpath=//*[contains(text(), 'Emissão') or contains(text(), 'Emissao') or contains(., 'Emissão') or contains(., 'Emissao')]/following::input[1]"
-                    ]
-                    emissao_mes_selectors = [
-                        "xpath=//input[contains(@id, 'mesEmissao') or contains(@id, 'dtEmissaoMes') or contains(@id, 'txtMesEmissao')]",
-                        "xpath=//*[contains(text(), 'Emissão') or contains(text(), 'Emissao') or contains(., 'Emissão') or contains(., 'Emissao')]/following::input[2]"
-                    ]
-                    emissao_ano_selectors = [
-                        "xpath=//input[contains(@id, 'anoEmissao') or contains(@id, 'dtEmissaoAno') or contains(@id, 'txtAnoEmissao')]",
-                        "xpath=//*[contains(text(), 'Emissão') or contains(text(), 'Emissao') or contains(., 'Emissão') or contains(., 'Emissao')]/following::input[3]"
-                    ]
-                    await fill_first_available(frame, emissao_dia_selectors, day_em)
-                    await fill_first_available(frame, emissao_mes_selectors, month_em)
-                    await fill_first_available(frame, emissao_ano_selectors, year_em)
+                    try:
+                        today = ref_date or datetime.date.today()
+                        day_em, month_em, year_em = f"{today.day:02d}", f"{today.month:02d}", f"{today.year}"
+                        
+                        emissao_dia_selectors = [
+                            "xpath=//input[contains(@id, 'diaEmissao') or contains(@id, 'dtEmissaoDia') or contains(@id, 'txtDiaEmissao')]",
+                            "xpath=//*[contains(text(), 'Emissão') or contains(text(), 'Emissao') or contains(., 'Emissão') or contains(., 'Emissao')]/following::input[1]"
+                        ]
+                        emissao_mes_selectors = [
+                            "xpath=//input[contains(@id, 'mesEmissao') or contains(@id, 'dtEmissaoMes') or contains(@id, 'txtMesEmissao')]",
+                            "xpath=//*[contains(text(), 'Emissão') or contains(text(), 'Emissao') or contains(., 'Emissão') or contains(., 'Emissao')]/following::input[2]"
+                        ]
+                        emissao_ano_selectors = [
+                            "xpath=//input[contains(@id, 'anoEmissao') or contains(@id, 'dtEmissaoAno') or contains(@id, 'txtAnoEmissao')]",
+                            "xpath=//*[contains(text(), 'Emissão') or contains(text(), 'Emissao') or contains(., 'Emissão') or contains(., 'Emissao')]/following::input[3]"
+                        ]
+                        await fill_first_available(frame, emissao_dia_selectors, day_em, timeout_ms=2000)
+                        await fill_first_available(frame, emissao_mes_selectors, month_em, timeout_ms=2000)
+                        await fill_first_available(frame, emissao_ano_selectors, year_em, timeout_ms=2000)
+                    except Exception as e:
+                        await log_progress(f"Data de emissão já preenchida ou não editável: {str(e)}", "running")
                     
                     # 2. Due Date (Vencimento)
                     day, month, year = get_due_date_for_client(ref_date, due_day)
