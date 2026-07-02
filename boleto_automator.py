@@ -265,19 +265,37 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                             "xpath=//input[contains(@id, 'diaEmissao') or contains(@id, 'dtEmissaoDia') or contains(@id, 'txtDiaEmissao')]",
                             "xpath=//*[contains(text(), 'Emissão') or contains(text(), 'Emissao') or contains(., 'Emissão') or contains(., 'Emissao')]/following::input[1]"
                         ]
-                        emissao_mes_selectors = [
-                            "xpath=//input[contains(@id, 'mesEmissao') or contains(@id, 'dtEmissaoMes') or contains(@id, 'txtMesEmissao')]",
-                            "xpath=//*[contains(text(), 'Emissão') or contains(text(), 'Emissao') or contains(., 'Emissão') or contains(., 'Emissao')]/following::input[2]"
-                        ]
-                        emissao_ano_selectors = [
-                            "xpath=//input[contains(@id, 'anoEmissao') or contains(@id, 'dtEmissaoAno') or contains(@id, 'txtAnoEmissao')]",
-                            "xpath=//*[contains(text(), 'Emissão') or contains(text(), 'Emissao') or contains(., 'Emissão') or contains(., 'Emissao')]/following::input[3]"
-                        ]
-                        await fill_first_available(frame, emissao_dia_selectors, day_em, timeout_ms=2000)
-                        await fill_first_available(frame, emissao_mes_selectors, month_em, timeout_ms=2000)
-                        await fill_first_available(frame, emissao_ano_selectors, year_em, timeout_ms=2000)
+                        
+                        # Only fill if the field is empty or "00"
+                        dia_loc = frame.locator(emissao_dia_selectors[0]).first
+                        has_value = False
+                        if await dia_loc.count() > 0:
+                            current_val = await dia_loc.input_value()
+                            if current_val and current_val != "00" and current_val != "":
+                                has_value = True
+                                await log_progress(f"Data de emissão já preenchida com {current_val}. Mantendo.", "running")
+                        
+                        if not has_value:
+                            emissao_mes_selectors = [
+                                "xpath=//input[contains(@id, 'mesEmissao') or contains(@id, 'dtEmissaoMes') or contains(@id, 'txtMesEmissao')]",
+                                "xpath=//*[contains(text(), 'Emissão') or contains(text(), 'Emissao') or contains(., 'Emissão') or contains(., 'Emissao')]/following::input[2]"
+                            ]
+                            emissao_ano_selectors = [
+                                "xpath=//input[contains(@id, 'anoEmissao') or contains(@id, 'dtEmissaoAno') or contains(@id, 'txtAnoEmissao')]",
+                                "xpath=//*[contains(text(), 'Emissão') or contains(text(), 'Emissao') or contains(., 'Emissão') or contains(., 'Emissao')]/following::input[3]"
+                            ]
+                            await fill_first_available(frame, emissao_dia_selectors, day_em, timeout_ms=2000)
+                            await fill_first_available(frame, emissao_mes_selectors, month_em, timeout_ms=2000)
+                            await fill_first_available(frame, emissao_ano_selectors, year_em, timeout_ms=2000)
                     except Exception as e:
-                        await log_progress(f"Data de emissão já preenchida ou não editável: {str(e)}", "running")
+                        await log_progress(f"Erro ao verificar/preencher data de emissão: {str(e)}", "running")
+                    
+                    # Close any active floating calendar popups
+                    try:
+                        await page.keyboard.press("Escape")
+                        await page.wait_for_timeout(500)
+                    except Exception:
+                        pass
                     
                     # 2. Due Date (Vencimento)
                     day, month, year = get_due_date_for_client(ref_date, due_day)
@@ -311,16 +329,16 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                     # 4. Multa e Juros
                     # Multa: Select %, Value 2,00, Days 1
                     multa_selectors = [
-                        "xpath=//select[contains(@id, 'multa') or contains(@id, 'tipoMulta') or contains(@id, 'selMulta')]",
-                        "xpath=//*[contains(text(), 'Multa') or contains(., 'Multa')]/following::select[1]"
+                        "xpath=//td[contains(normalize-space(.), 'Multa:') or contains(normalize-space(.), 'Multa')]/following::select[1]",
+                        "xpath=//select[contains(@id, 'multa') or contains(@id, 'tipoMulta') or contains(@id, 'selMulta')]"
                     ]
                     multa_val_selectors = [
-                        "xpath=//input[contains(@id, 'vlMulta') or contains(@id, 'pctMulta') or contains(@id, 'txtMulta')]",
-                        "xpath=//*[contains(text(), 'Multa') or contains(., 'Multa')]/following::input[1]"
+                        "xpath=//td[contains(normalize-space(.), 'Multa:') or contains(normalize-space(.), 'Multa')]/following::input[1]",
+                        "xpath=//input[contains(@id, 'vlMulta') or contains(@id, 'pctMulta') or contains(@id, 'txtMulta')]"
                     ]
                     multa_dias_selectors = [
-                        "xpath=//input[contains(@id, 'diasMulta') or contains(@id, 'atrasoMulta')]",
-                        "xpath=//*[contains(text(), 'Multa') or contains(., 'Multa')]/following::input[2]"
+                        "xpath=//td[contains(normalize-space(.), 'Multa:') or contains(normalize-space(.), 'Multa')]/following::input[2]",
+                        "xpath=//input[contains(@id, 'diasMulta') or contains(@id, 'atrasoMulta')]"
                     ]
                     
                     await select_dropdown_option(frame, multa_selectors, ["%", "percentual", "percent", "taxa"])
@@ -329,16 +347,16 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                     
                     # Juros: Select %, Value 1,00, Days 1
                     juros_selectors = [
-                        "xpath=//select[contains(@id, 'juros') or contains(@id, 'tipoJuros') or contains(@id, 'selJuros')]",
-                        "xpath=//*[contains(text(), 'Juros') or contains(., 'Juros')]/following::select[1]"
+                        "xpath=//td[contains(normalize-space(.), 'Juros:') or contains(normalize-space(.), 'Juros')]/following::select[1]",
+                        "xpath=//select[contains(@id, 'juros') or contains(@id, 'tipoJuros') or contains(@id, 'selJuros')]"
                     ]
                     juros_val_selectors = [
-                        "xpath=//input[contains(@id, 'vlJuros') or contains(@id, 'pctJuros') or contains(@id, 'txtJuros')]",
-                        "xpath=//*[contains(text(), 'Juros') or contains(., 'Juros')]/following::input[1]"
+                        "xpath=//td[contains(normalize-space(.), 'Juros:') or contains(normalize-space(.), 'Juros')]/following::input[1]",
+                        "xpath=//input[contains(@id, 'vlJuros') or contains(@id, 'pctJuros') or contains(@id, 'txtJuros')]"
                     ]
                     juros_dias_selectors = [
-                        "xpath=//input[contains(@id, 'diasJuros') or contains(@id, 'atrasoJuros')]",
-                        "xpath=//*[contains(text(), 'Juros') or contains(., 'Juros')]/following::input[2]"
+                        "xpath=//td[contains(normalize-space(.), 'Juros:') or contains(normalize-space(.), 'Juros')]/following::input[2]",
+                        "xpath=//input[contains(@id, 'diasJuros') or contains(@id, 'atrasoJuros')]"
                     ]
                     
                     await select_dropdown_option(frame, juros_selectors, ["%", "percentual", "percent", "taxa"])
