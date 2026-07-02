@@ -1121,6 +1121,7 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
     """
     # 1. Fetch configurations
     conn = get_db_connection()
+    emissions_to_process = []
     cursor = conn.cursor()
     cursor.execute("SELECT key, value FROM system_config")
     config = {row["key"]: row["value"] for row in cursor.fetchall()}
@@ -1455,12 +1456,24 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
                 # 10. Log Success in SQLite
                 conn = get_db_connection()
                 cursor = conn.cursor()
+                boleto_status_val = "pendente" if client.get("requires_boleto", 1) else "nao_exigido"
                 cursor.execute("""
-                INSERT INTO emissions (client_id, competence, status, invoice_number, pdf_path, timestamp)
-                VALUES (?, ?, ?, ?, ?, datetime('now'))
-                """, (client_id, competence_str, "emitida", invoice_number or "N/A", pdf_path))
+                INSERT INTO emissions (client_id, competence, status, invoice_number, pdf_path, boleto_status, timestamp)
+                VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+                """, (client_id, competence_str, "emitida", invoice_number or "N/A", pdf_path, boleto_status_val))
+                emission_id = cursor.lastrowid
                 conn.commit()
                 conn.close()
+                
+                if client.get("requires_boleto", 1):
+                    emissions_to_process.append({
+                        "emission_id": emission_id,
+                        "client_name": client_name,
+                        "cnpj_cpf": client["cnpj_cpf"],
+                        "invoice_number": invoice_number,
+                        "boleto_value": boleto_value,
+                        "due_day": client["due_day"]
+                    })
                 
                 pdf_url = f"/invoices/{folder_name}/{filename}"
                 await log_progress(f"Nota emitida, validada em Gerenciar NFSE e salva para {client_name}. Nota Nº {invoice_number}", "success", client_id, pdf_url=pdf_url)
@@ -1501,6 +1514,15 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
         await log_progress("Processamento concluído para todos os clientes selecionados.", "success")
         await page.wait_for_timeout(3000)
         await browser.close()
+
+    # If there are successfully emitted invoices that require boletos, run Bradesco automation
+    if emissions_to_process:
+        await log_progress(f"Iniciando a geração automática de {len(emissions_to_process)} boleto(s) no Bradesco...", "info")
+        from boleto_automator import run_boleto_automation
+        try:
+            await run_boleto_automation(emissions_to_process, ref_date, progress_callback)
+        except Exception as e:
+            await log_progress(f"Erro na execução sequencial de boletos: {str(e)}", "error")
 
 async def recover_nfse_pdf(client_id, invoice_number, ref_date=None, progress_callback=None):
     """Download an already emitted invoice from Gerenciar NFSE without emitting again."""

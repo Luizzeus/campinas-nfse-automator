@@ -20,6 +20,7 @@ const selectAllClientsCheckbox = document.getElementById('select-all-clients');
 const selectedCountEl = document.getElementById('selected-count');
 const totalCountEl = document.getElementById('total-count');
 const btnStartAutomation = document.getElementById('btn-start-automation');
+const btnStartBoletosOnly = document.getElementById('btn-start-boboleto-only') || document.getElementById('btn-start-boletos-only');
 const runRefDateInput = document.getElementById('run-ref-date');
 const terminalLogOutput = document.getElementById('terminal-log-output');
 const btnClearLogs = document.getElementById('btn-clear-logs');
@@ -51,6 +52,8 @@ const btnAddClient = document.getElementById('btn-add-client');
 const configForm = document.getElementById('config-form');
 const configCnpj = document.getElementById('config-cnpj');
 const configPassword = document.getElementById('config-password');
+const configBradescoUser = document.getElementById('config-bradesco-user');
+const configBradescoPassword = document.getElementById('config-bradesco-password');
 const configHeadless = document.getElementById('config-headless');
 
 // Modal Elements
@@ -362,6 +365,53 @@ btnStartAutomation.addEventListener('click', async () => {
     }
 });
 
+// Run Boletos Standalone Trigger
+btnStartBoletosOnly.addEventListener('click', async () => {
+    if (selectedClients.size === 0) {
+        alert("Por favor, selecione pelo menos um cliente para gerar boletos.");
+        return;
+    }
+    
+    // Clear logs
+    terminalLogOutput.innerHTML = '';
+    appendTerminalLog({
+        timestamp: new Date().toLocaleTimeString(),
+        status: 'info',
+        message: "Lançando executor de boletos..."
+    });
+    
+    try {
+        const payload = {
+            client_ids: Array.from(selectedClients),
+            ref_date: runRefDateInput.value
+        };
+        
+        const res = await fetch('/api/run-boletos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        
+        const data = await res.json();
+        appendTerminalLog({
+            timestamp: new Date().toLocaleTimeString(),
+            status: 'success',
+            message: data.message
+        });
+        
+        // Reset check selections
+        selectedClients.clear();
+        selectAllClientsCheckbox.checked = false;
+        loadDashboardClients();
+    } catch (e) {
+        appendTerminalLog({
+            timestamp: new Date().toLocaleTimeString(),
+            status: 'error',
+            message: "Erro ao tentar conectar com a API de boletos."
+        });
+    }
+});
+
 // Load System Config
 async function loadConfig() {
     try {
@@ -370,6 +420,8 @@ async function loadConfig() {
         
         configCnpj.value = config.portal_cnpj;
         configPassword.value = config.portal_password;
+        configBradescoUser.value = config.bradesco_user || '';
+        configBradescoPassword.value = config.bradesco_password || '';
         configHeadless.checked = config.headless;
     } catch (e) {
         console.error("Error loading config:", e);
@@ -383,6 +435,8 @@ configForm.addEventListener('submit', async (e) => {
     const payload = {
         portal_cnpj: configCnpj.value,
         portal_password: configPassword.value,
+        bradesco_user: configBradescoUser.value,
+        bradesco_password: configBradescoPassword.value,
         headless: configHeadless.checked
     };
     
@@ -423,7 +477,7 @@ async function loadEmissionsHistory() {
             const tdComp = document.createElement('td');
             tdComp.textContent = e.competence;
             
-            // Status badge
+            // Status badge for NFS-e
             const tdStatus = document.createElement('td');
             const badge = document.createElement('span');
             badge.className = e.status === 'emitida' ? 'badge badge-success' : 'badge badge-danger';
@@ -433,33 +487,81 @@ async function loadEmissionsHistory() {
             const tdNote = document.createElement('td');
             tdNote.textContent = e.invoice_number || '-';
             
+            // Status badge for Boleto
+            const tdBoletoStatus = document.createElement('td');
+            const boletoBadge = document.createElement('span');
+            if (e.boleto_status === 'gerado') {
+                boletoBadge.className = 'badge badge-success';
+                boletoBadge.textContent = 'GERADO';
+            } else if (e.boleto_status === 'erro') {
+                boletoBadge.className = 'badge badge-danger';
+                boletoBadge.textContent = 'ERRO';
+            } else if (e.boleto_status === 'pendente') {
+                boletoBadge.className = 'badge badge-warning';
+                boletoBadge.textContent = 'PENDENTE';
+            } else if (e.boleto_status === 'nao_exigido') {
+                boletoBadge.className = 'badge badge-secondary';
+                boletoBadge.style.opacity = '0.7';
+                boletoBadge.textContent = 'NÃO EXIGIDO';
+            } else {
+                boletoBadge.className = 'badge';
+                boletoBadge.textContent = '-';
+            }
+            tdBoletoStatus.appendChild(boletoBadge);
+            
             // Actions
             const tdActions = document.createElement('td');
+            tdActions.style.display = 'flex';
+            tdActions.style.gap = '6px';
+            
+            // NFS-e download/view link
             if (e.status === 'emitida' && e.pdf_path) {
                 const pdfLink = document.createElement('a');
-                // Slice absolute path to mount serving URL
-                // /invoices/MM-YYYY/NFS_...
                 const index = e.pdf_path.indexOf('/invoices/');
                 const url = index !== -1 ? e.pdf_path.substring(index) : '#';
-                
                 pdfLink.href = url;
                 pdfLink.target = '_blank';
                 pdfLink.className = 'btn btn-icon';
                 pdfLink.title = 'Visualizar Nota PDF';
-                pdfLink.innerHTML = '<span class="material-icons-round" style="font-size:16px;">download</span>';
+                pdfLink.innerHTML = '<span class="material-icons-round" style="font-size:16px;">receipt</span>';
                 tdActions.appendChild(pdfLink);
             } else if (e.status === 'erro' && e.screenshot_path) {
                 const imgLink = document.createElement('a');
                 const index = e.screenshot_path.indexOf('/screenshots/');
                 const url = index !== -1 ? e.screenshot_path.substring(index) : '#';
-                
                 imgLink.href = url;
                 imgLink.target = '_blank';
                 imgLink.className = 'btn btn-icon';
-                imgLink.title = 'Visualizar Screenshot de Erro';
+                imgLink.title = 'Erro Nota: Ver Screenshot';
+                imgLink.innerHTML = '<span class="material-icons-round" style="font-size:16px;">error_outline</span>';
+                tdActions.appendChild(imgLink);
+            }
+            
+            // Boleto download/view link
+            if (e.boleto_status === 'gerado' && e.boleto_pdf_path) {
+                const boletoLink = document.createElement('a');
+                const index = e.boleto_pdf_path.indexOf('/boletos/');
+                const url = index !== -1 ? e.boleto_pdf_path.substring(index) : '#';
+                boletoLink.href = url;
+                boletoLink.target = '_blank';
+                boletoLink.className = 'btn btn-icon';
+                boletoLink.style.color = '#e53935'; // distinct red color for boleto download
+                boletoLink.title = 'Visualizar Boleto PDF';
+                boletoLink.innerHTML = '<span class="material-icons-round" style="font-size:16px;">picture_as_pdf</span>';
+                tdActions.appendChild(boletoLink);
+            } else if (e.boleto_status === 'erro' && e.boleto_screenshot_path) {
+                const imgLink = document.createElement('a');
+                const index = e.boleto_screenshot_path.indexOf('/screenshots/');
+                const url = index !== -1 ? e.boleto_screenshot_path.substring(index) : '#';
+                imgLink.href = url;
+                imgLink.target = '_blank';
+                imgLink.className = 'btn btn-icon';
+                imgLink.title = 'Erro Boleto: Ver Screenshot';
                 imgLink.innerHTML = '<span class="material-icons-round" style="font-size:16px;">photo</span>';
                 tdActions.appendChild(imgLink);
-            } else {
+            }
+            
+            if (tdActions.childNodes.length === 0) {
                 tdActions.textContent = '-';
             }
             
@@ -468,6 +570,7 @@ async function loadEmissionsHistory() {
             tr.appendChild(tdComp);
             tr.appendChild(tdStatus);
             tr.appendChild(tdNote);
+            tr.appendChild(tdBoletoStatus);
             tr.appendChild(tdActions);
             
             emissionsHistoryList.appendChild(tr);

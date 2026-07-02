@@ -101,10 +101,16 @@
                             <div class="selection-summary">
                                 <span id="selected-count">0</span> de <span id="total-count">0</span> clientes selecionados
                             </div>
-                            <button class="btn btn-primary" id="btn-start-automation">
-                                <span class="material-icons-round">play_arrow</span>
-                                Iniciar Automação
-                            </button>
+                            <div style="display: flex; gap: 10px;">
+                                <button class="btn btn-secondary" id="btn-start-boletos-only">
+                                    <span class="material-icons-round">receipt_long</span>
+                                    Gerar Boletos
+                                </button>
+                                <button class="btn btn-primary" id="btn-start-automation">
+                                    <span class="material-icons-round">play_arrow</span>
+                                    Iniciar Automação
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -150,8 +156,9 @@
                                         <th>Data/Hora</th>
                                         <th>Cliente</th>
                                         <th>Competência</th>
-                                        <th>Status</th>
+                                        <th>Status Nota</th>
                                         <th>Nota Nº</th>
+                                        <th>Status Boleto</th>
                                         <th>Ações</th>
                                     </tr>
                                 </thead>
@@ -313,6 +320,16 @@
                         <div class="form-group">
                             <label for="config-password">Senha do Portal:</label>
                             <input type="password" id="config-password" class="input-field" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="config-bradesco-user">Usuário Bradesco Net Empresa:</label>
+                            <input type="text" id="config-bradesco-user" class="input-field" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="config-bradesco-password">Senha Bradesco Net Empresa:</label>
+                            <input type="password" id="config-bradesco-password" class="input-field" required>
                         </div>
                         
                         <div class="form-group check-group">

@@ -9,6 +9,7 @@ from database import get_db_connection, init_db
 from automator import recover_nfse_pdf, run_nfse_automation
 from reporter import generate_pdf_report
 from email_sender import get_billing_email_items, run_billing_email_automation, verify_boleto_files
+from utils import get_competence_info
 
 # Initialize app
 init_db()
@@ -28,15 +29,17 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 REPORTS_DIR = os.path.join(BASE_DIR, "reports")
 INVOICES_DIR = os.path.join(BASE_DIR, "invoices")
+BOLETOS_DIR = os.path.join(BASE_DIR, "boletos")
 
 # Create directories if not exist
-for d in [STATIC_DIR, REPORTS_DIR, INVOICES_DIR]:
+for d in [STATIC_DIR, REPORTS_DIR, INVOICES_DIR, BOLETOS_DIR]:
     os.makedirs(d, exist_ok=True)
 
 # Mount static files for invoices, reports, and frontend assets
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 app.mount("/reports", StaticFiles(directory=REPORTS_DIR), name="reports")
 app.mount("/invoices", StaticFiles(directory=INVOICES_DIR), name="invoices")
+app.mount("/boletos", StaticFiles(directory=BOLETOS_DIR), name="boletos")
 
 # Models
 class ClientModel(BaseModel):
@@ -54,6 +57,8 @@ class ClientModel(BaseModel):
 class ConfigModel(BaseModel):
     portal_cnpj: str
     portal_password: str
+    bradesco_user: str
+    bradesco_password: str
     headless: bool
 
 class RunPayload(BaseModel):
@@ -172,6 +177,8 @@ def get_config():
     return {
         "portal_cnpj": config.get("portal_cnpj", ""),
         "portal_password": config.get("portal_password", ""),
+        "bradesco_user": config.get("bradesco_user", ""),
+        "bradesco_password": config.get("bradesco_password", ""),
         "headless": config.get("headless", "false").lower() == "true"
     }
 
@@ -183,6 +190,8 @@ def save_config(config: ConfigModel):
     for key, value in [
         ("portal_cnpj", config.portal_cnpj),
         ("portal_password", config.portal_password),
+        ("bradesco_user", config.bradesco_user),
+        ("bradesco_password", config.bradesco_password),
         ("headless", str(config.headless).lower())
     ]:
         cursor.execute("""
@@ -362,6 +371,73 @@ async def execute_recover_task(client_id: int, invoice_number: str, ref_date_str
 def start_automation(payload: RunPayload, background_tasks: BackgroundTasks):
     background_tasks.add_task(execute_automation_task, payload.client_ids, payload.ref_date)
     return {"status": "success", "message": "Automação iniciada. Acompanhe os logs em tempo real."}
+
+@app.post("/api/run-boletos")
+def start_boleto_automation(payload: RunPayload, background_tasks: BackgroundTasks):
+    background_tasks.add_task(execute_boleto_automation_task, payload.client_ids, payload.ref_date)
+    return {"status": "success", "message": "Automação de boletos iniciada. Acompanhe os logs em tempo real."}
+
+async def execute_boleto_automation_task(client_ids: List[int], ref_date_str: Optional[str]):
+    ref_date = None
+    if ref_date_str:
+        try:
+            ref_date = datetime.datetime.strptime(ref_date_str, "%Y-%m-%d").date()
+        except Exception:
+            pass
+            
+    async def log_to_websocket(msg_dict):
+        await manager.broadcast(msg_dict)
+        
+    try:
+        from boleto_automator import run_boleto_automation
+        comp_info = get_competence_info(ref_date)
+        competence_str = comp_info["month_year_short"]
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        emissions_to_process = []
+        for client_id in client_ids:
+            cursor.execute("""
+                SELECT e.id as emission_id, e.invoice_number, c.name as client_name, c.cnpj_cpf, c.boleto_value, c.due_day
+                FROM emissions e
+                JOIN clients c ON e.client_id = c.id
+                WHERE e.client_id = ? AND e.competence = ? AND e.status = 'emitida'
+                ORDER BY e.timestamp DESC LIMIT 1
+            """, (client_id, competence_str))
+            row = cursor.fetchone()
+            if row:
+                emissions_to_process.append({
+                    "emission_id": row["emission_id"],
+                    "client_name": row["client_name"],
+                    "cnpj_cpf": row["cnpj_cpf"],
+                    "invoice_number": row["invoice_number"],
+                    "boleto_value": row["boleto_value"],
+                    "due_day": row["due_day"]
+                })
+            else:
+                await log_to_websocket({
+                    "timestamp": datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                    "status": "warning",
+                    "message": f"Nenhuma NFS-e emitida encontrada para o cliente ID {client_id} na competência {competence_str}. Emita a nota fiscal primeiro."
+                })
+        conn.close()
+        
+        if emissions_to_process:
+            await run_boleto_automation(emissions_to_process, ref_date, progress_callback=log_to_websocket)
+        else:
+            await log_to_websocket({
+                "timestamp": datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                "status": "error",
+                "message": "Nenhum boleto pôde ser gerado pois não há notas fiscais correspondentes emitidas."
+            })
+            
+    except Exception as e:
+        await manager.broadcast({
+            "timestamp": datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+            "status": "error",
+            "message": f"Erro inesperado no executor de boletos: {str(e)}"
+        })
 
 @app.post("/api/recover-invoice")
 def recover_invoice(payload: RecoverInvoicePayload, background_tasks: BackgroundTasks):

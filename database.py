@@ -93,6 +93,18 @@ def init_db():
         WHERE lower(name) = lower(?)
     """, ("Elite",))
 
+    # Migrate emissions table
+    cursor.execute("PRAGMA table_info(emissions)")
+    emissions_columns = {row["name"] for row in cursor.fetchall()}
+    if "boleto_status" not in emissions_columns:
+        cursor.execute("ALTER TABLE emissions ADD COLUMN boleto_status TEXT DEFAULT NULL")
+    if "boleto_pdf_path" not in emissions_columns:
+        cursor.execute("ALTER TABLE emissions ADD COLUMN boleto_pdf_path TEXT DEFAULT NULL")
+    if "boleto_error_message" not in emissions_columns:
+        cursor.execute("ALTER TABLE emissions ADD COLUMN boleto_error_message TEXT DEFAULT NULL")
+    if "boleto_screenshot_path" not in emissions_columns:
+        cursor.execute("ALTER TABLE emissions ADD COLUMN boleto_screenshot_path TEXT DEFAULT NULL")
+
     conn.commit()
     
     # Seed default configurations
@@ -100,6 +112,8 @@ def init_db():
         ("portal_cnpj", "07.268.051/0001-48"),
         ("portal_password", "5C0A11EF"),
         ("headless", "false"),
+        ("bradesco_user", "LCSR00145"),
+        ("bradesco_password", "@ccessINC21*"),
     ]
     for key, value in default_configs:
         cursor.execute("INSERT OR IGNORE INTO system_config (key, value) VALUES (?, ?)", (key, value))

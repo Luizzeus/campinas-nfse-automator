@@ -1,0 +1,327 @@
+import asyncio
+import os
+import re
+import datetime
+from calendar import monthrange
+import unicodedata
+from playwright.async_api import TimeoutError as PlaywrightTimeoutError, async_playwright
+from database import get_db_connection
+from utils import get_competence_info
+from automator import slugify_name
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BOLETOS_DIR = os.path.join(BASE_DIR, "boletos")
+SCREENSHOTS_DIR = os.path.join(BASE_DIR, "screenshots")
+os.makedirs(BOLETOS_DIR, exist_ok=True)
+os.makedirs(SCREENSHOTS_DIR, exist_ok=True)
+
+# Bradesco URLs
+BRADESCO_LOGIN_URL = "https://www.ne12.bradesconetempresa.b.br/ibpjlogin/login.jsf"
+
+def get_due_date_for_client(ref_date, due_day):
+    """Calculate the due date (DD/MM/YYYY) for the month following the competence."""
+    comp_info = get_competence_info(ref_date)
+    competence = comp_info["month_year_short"] # MM/YYYY
+    month, year = [int(p) for p in competence.split("/")]
+    
+    # Calculate next month (due date month)
+    if month == 12:
+        due_month, due_year = 1, year + 1
+    else:
+        due_month, due_year = month + 1, year
+        
+    days_in_month = monthrange(due_year, due_month)[1]
+    day = min(int(due_day or 10), days_in_month)
+    return f"{day:02d}", f"{due_month:02d}", f"{due_year}"
+
+async def wait_for_bradesco_logged_in(page, timeout_ms=180000):
+    """Wait for the user to solve 2FA and login successfully."""
+    # Look for elements that appear only on the logged-in screen (e.g. "SAIR", "Cobrança")
+    selectors = [
+        "xpath=//a[contains(normalize-space(.), 'SAIR') or contains(normalize-space(.), 'Sair')]",
+        "xpath=//*[normalize-space()='Cobrança' or normalize-space()='Saldos e Extratos']",
+        "xpath=//div[contains(@class, 'menu')]//a[contains(normalize-space(.), 'Cobrança')]"
+    ]
+    
+    deadline = datetime.datetime.now() + datetime.timedelta(milliseconds=timeout_ms)
+    while datetime.datetime.now() < deadline:
+        for selector in selectors:
+            try:
+                locator = page.locator(selector).first
+                if await locator.count() > 0 and await locator.is_visible():
+                    return True
+            except Exception:
+                pass
+        await page.wait_for_timeout(1000)
+    return False
+
+async def run_boleto_automation(emissions_to_process, ref_date=None, progress_callback=None):
+    """
+    Automates Bradesco Net Empresa to create boletos for successfully issued NFS-es.
+    emissions_to_process: List of dicts, e.g.:
+      [{"emission_id": 1, "client_name": "Congregação Sta Cruz", "cnpj_cpf": "...", "invoice_number": "2676", "boleto_value": 3460.43, "due_day": 10}]
+    """
+    if not emissions_to_process:
+        return
+        
+    # 1. Fetch credentials
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT key, value FROM system_config")
+    config = {row["key"]: row["value"] for row in cursor.fetchall()}
+    conn.close()
+    
+    bradesco_user = config.get("bradesco_user", "LCSR00145")
+    bradesco_password = config.get("bradesco_password", "@ccessINC21*")
+    # For Bradesco, since 2FA is always needed, we prefer to run in headed mode unless explicitly config says true
+    headless = config.get("headless", "false").lower() == "true"
+    
+    comp_info = get_competence_info(ref_date)
+    folder_name = comp_info["month_year_short"].replace("/", "-")
+    boleto_folder = os.path.join(BOLETOS_DIR, folder_name)
+    screenshot_folder = os.path.join(SCREENSHOTS_DIR, folder_name)
+    os.makedirs(boleto_folder, exist_ok=True)
+    os.makedirs(screenshot_folder, exist_ok=True)
+    
+    async def log_progress(msg, status="info", client_id=None, boleto_url=None):
+        if progress_callback:
+            await progress_callback({
+                "timestamp": datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                "client_id": client_id,
+                "status": status,
+                "message": msg,
+                "boleto_url": boleto_url
+            })
+        print(f"[BRADESCO {status.upper()}] {msg}")
+
+    await log_progress("Iniciando Playwright para o portal Bradesco...", "info")
+    
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(
+            headless=headless,
+            args=["--start-maximized", "--disable-notifications", "--disable-popup-blocking"]
+        )
+        context = await browser.new_context(viewport={"width": 1920, "height": 1080} if not headless else None)
+        page = await context.new_page()
+        
+        try:
+            # 2. Login Flow
+            await log_progress("Acessando Bradesco Net Empresa...", "info")
+            await page.goto(BRADESCO_LOGIN_URL, timeout=45000)
+            await page.wait_for_timeout(2000)
+            
+            await log_progress("Preenchendo usuário e senha do Bradesco...", "info")
+            await page.fill('input[id="identificationForm:txtUsuario"]', bradesco_user)
+            await page.fill('input[id="identificationForm:txtSenha"]', bradesco_password)
+            
+            await log_progress("Clicando em Avançar no login do Bradesco...", "info")
+            await page.click('input[id="identificationForm:botaoAvancar"]')
+            await page.wait_for_timeout(3000)
+            
+            await log_progress("Aguardando autenticação 2FA (Chave de Segurança/Token) e login pelo usuário na tela do navegador...", "warning")
+            
+            # Wait up to 3 minutes for login to complete
+            if not await wait_for_bradesco_logged_in(page, timeout_ms=180000):
+                await log_progress("Tempo esgotado aguardando o login no Bradesco. Certifique-se de realizar o login completo na tela.", "error")
+                await browser.close()
+                return
+                
+            await log_progress("Login no Bradesco realizado com sucesso!", "success")
+            await page.wait_for_timeout(3000)
+            
+            # 3. Process each client
+            for item in emissions_to_process:
+                emission_id = item["emission_id"]
+                client_name = item["client_name"]
+                cnpj_cpf = re.sub(r"\D+", "", item["cnpj_cpf"])
+                invoice_number = item["invoice_number"]
+                boleto_value = item["boleto_value"]
+                due_day = item["due_day"]
+                
+                await log_progress(f"Iniciando geração de boleto para: {client_name} (Nota Nº {invoice_number})", "running")
+                
+                try:
+                    # Navigate to "Cobrança" tab
+                    await log_progress("Navegando para o menu Cobrança...", "running")
+                    cobrança_sel = "xpath=//a[normalize-space()='Cobrança' or contains(normalize-space(.), 'Cobrança')]"
+                    await page.click(cobrança_sel)
+                    await page.wait_for_timeout(2000)
+                    
+                    # Click "Emitir Boleto"
+                    await log_progress("Clicando em Emitir Boleto...", "running")
+                    emitir_sel = "xpath=//a[normalize-space()='Emitir Boleto' or contains(normalize-space(.), 'Emitir Boleto')]"
+                    await page.click(emitir_sel)
+                    await page.wait_for_timeout(3000)
+                    
+                    # Passo 2: Fill Boleto Details Form
+                    await log_progress("Preenchendo detalhes do boleto...", "running")
+                    
+                    # 1. Document Number (same as NFS-e)
+                    doc_input_sel = "xpath=//input[contains(@id, 'numDocumento') or contains(@name, 'numDocumento') or contains(@id, 'NumeroDocumento') or contains(@id, 'txtNumero')]"
+                    if await page.locator(doc_input_sel).count() == 0:
+                        doc_input_sel = "xpath=//td[contains(., 'Número do documento')]/following::input[1]"
+                    await page.fill(doc_input_sel, str(invoice_number))
+                    
+                    # 2. Due Date (Vencimento)
+                    day, month, year = get_due_date_for_client(ref_date, due_day)
+                    await log_progress(f"Calculada data de vencimento: {day}/{month}/{year}", "running")
+                    
+                    # Find day, month, year inputs
+                    day_sel = "xpath=//input[contains(@id, 'diaVencimento') or contains(@id, 'dtVencimentoDia') or contains(@id, 'txtDiaVenc')]"
+                    if await page.locator(day_sel).count() == 0:
+                        day_sel = "xpath=//td[contains(., 'Vencimento')]/following::input[1]"
+                    await page.fill(day_sel, day)
+                    
+                    month_sel = "xpath=//input[contains(@id, 'mesVencimento') or contains(@id, 'dtVencimentoMes') or contains(@id, 'txtMesVenc')]"
+                    if await page.locator(month_sel).count() == 0:
+                        month_sel = "xpath=//td[contains(., 'Vencimento')]/following::input[2]"
+                    await page.fill(month_sel, month)
+                    
+                    year_sel = "xpath=//input[contains(@id, 'anoVencimento') or contains(@id, 'dtVencimentoAno') or contains(@id, 'txtAnoVenc')]"
+                    if await page.locator(year_sel).count() == 0:
+                        year_sel = "xpath=//td[contains(., 'Vencimento')]/following::input[3]"
+                    await page.fill(year_sel, year)
+                    
+                    # 3. Document Value (Valor do Documento)
+                    val_input_sel = "xpath=//input[contains(@id, 'valor') or contains(@id, 'vlDoc') or contains(@id, 'txtValor')]"
+                    if await page.locator(val_input_sel).count() == 0:
+                        val_input_sel = "xpath=//*[contains(text(), 'Valor do Documento')]/following::input[1]"
+                    val_str = f"{boleto_value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+                    await page.fill(val_input_sel, val_str)
+                    
+                    # 4. Multa e Juros
+                    # Multa: Select %, Value 2,00, Days 1
+                    multa_sel = "xpath=//select[contains(@id, 'multa') or contains(@id, 'tipoMulta')]"
+                    if await page.locator(multa_sel).count() > 0:
+                        await page.select_option(multa_sel, label="%")
+                    
+                    multa_val_sel = "xpath=//input[contains(@id, 'vlMulta') or contains(@id, 'pctMulta')]"
+                    if await page.locator(multa_val_sel).count() > 0:
+                        await page.fill(multa_val_sel, "2,00")
+                        
+                    multa_dias_sel = "xpath=//input[contains(@id, 'diasMulta') or contains(@id, 'atrasoMulta')]"
+                    if await page.locator(multa_dias_sel).count() > 0:
+                        await page.fill(multa_dias_sel, "1")
+                        
+                    # Juros: Select %, Value 1,00, Days 1
+                    juros_sel = "xpath=//select[contains(@id, 'juros') or contains(@id, 'tipoJuros')]"
+                    if await page.locator(juros_sel).count() > 0:
+                        await page.select_option(juros_sel, label="%")
+                        
+                    juros_val_sel = "xpath=//input[contains(@id, 'vlJuros') or contains(@id, 'pctJuros')]"
+                    if await page.locator(juros_val_sel).count() > 0:
+                        await page.fill(juros_val_sel, "1,00")
+                        
+                    juros_dias_sel = "xpath=//input[contains(@id, 'diasJuros') or contains(@id, 'atrasoJuros')]"
+                    if await page.locator(juros_dias_sel).count() > 0:
+                        await page.fill(juros_dias_sel, "1")
+                        
+                    # Click next (Avançar)
+                    avancar_sel = "xpath=//input[contains(@value, 'Avançar') or contains(@id, 'botaoAvancar') or @type='submit']"
+                    await page.click(avancar_sel)
+                    await page.wait_for_timeout(3000)
+                    
+                    # Passo 3: Pagador Search & Selection
+                    await log_progress("Selecionando pagador (cliente)...", "running")
+                    
+                    # Click "Lista de pagadores"
+                    lista_pagadores_sel = "xpath=//a[contains(normalize-space(.), 'Lista de pagadores')]"
+                    await page.click(lista_pagadores_sel)
+                    await page.wait_for_timeout(2000)
+                    
+                    # In the popup/dialog: search for client by CNPJ/CPF
+                    popup = None
+                    try:
+                        pages_before = len(context.pages)
+                        await page.wait_for_timeout(1000)
+                        if len(context.pages) > pages_before:
+                            popup = context.pages[-1]
+                    except Exception:
+                        pass
+                        
+                    target_page = popup if popup else page
+                    
+                    # Search by CNPJ/CPF inside the search window/element
+                    search_cnpj_sel = "xpath=//input[contains(@id, 'cnpj') or contains(@id, 'cpf') or contains(@name, 'cnpj') or contains(@name, 'cpf')]"
+                    await target_page.fill(search_cnpj_sel, cnpj_cpf)
+                    
+                    buscar_btn_sel = "xpath=//input[contains(@value, 'Buscar') or contains(@id, 'btnBuscar') or contains(@id, 'botaoBuscar')]"
+                    await target_page.click(buscar_btn_sel)
+                    await target_page.wait_for_timeout(2000)
+                    
+                    # Select the client from search results
+                    select_client_sel = "xpath=//a[contains(normalize-space(.), 'Selecionar') or contains(normalize-space(.), 'OK') or contains(@id, 'lnkSelecionar')]"
+                    await target_page.click(select_client_sel)
+                    await page.wait_for_timeout(2000)
+                    
+                    # Click Avançar/Confirmar to generate the boleto
+                    gerar_boleto_sel = "xpath=//input[contains(@value, 'Confirmar') or contains(@value, 'Gerar') or contains(@id, 'botaoConfirmar')]"
+                    await page.click(gerar_boleto_sel)
+                    await page.wait_for_timeout(4000)
+                    
+                    # Download generated PDF
+                    await log_progress("Baixando o PDF do boleto gerado...", "running")
+                    
+                    slug_client = slugify_name(client_name)
+                    filename = f"bradesco_{slug_client}_{invoice_number}.pdf"
+                    pdf_path = os.path.join(boleto_folder, filename)
+                    
+                    # Wait for download event when clicking visual/print button
+                    visualizar_btn_sel = "xpath=//a[contains(normalize-space(.), 'Visualizar') or contains(normalize-space(.), 'Imprimir') or contains(@id, 'btnVisualizar')]"
+                    
+                    async with page.expect_download(timeout=30000) as download_info:
+                        await page.click(visualizar_btn_sel)
+                    download = await download_info.value
+                    await download.save_as(pdf_path)
+                    
+                    # Log success to database
+                    conn = get_db_connection()
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                        UPDATE emissions
+                        SET boleto_status = 'gerado', boleto_pdf_path = ?, boleto_error_message = NULL, boleto_screenshot_path = NULL
+                        WHERE id = ?
+                    """, (pdf_path, emission_id))
+                    conn.commit()
+                    conn.close()
+                    
+                    boleto_url = f"/invoices/{folder_name}/{filename}".replace("/invoices/", "/boletos/")
+                    await log_progress(f"Boleto gerado e salvo com sucesso para {client_name}!", "success", boleto_url=boleto_url)
+                    
+                except Exception as ex:
+                    screenshot_filename = f"bradesco_{slugify_name(client_name)}_error.png"
+                    screenshot_path = os.path.join(screenshot_folder, screenshot_filename)
+                    try:
+                        await page.screenshot(path=screenshot_path)
+                    except Exception:
+                        screenshot_path = None
+                        
+                    err_msg = str(ex)
+                    await log_progress(f"Erro ao gerar boleto para {client_name}: {err_msg}", "error")
+                    
+                    # Log failure to database
+                    conn = get_db_connection()
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                        UPDATE emissions
+                        SET boleto_status = 'erro', boleto_error_message = ?, boleto_screenshot_path = ?
+                        WHERE id = ?
+                    """, (err_msg, screenshot_path, emission_id))
+                    conn.commit()
+                    conn.close()
+                    
+                    # Return to Cobrança dashboard for next client
+                    try:
+                        await page.click("xpath=//a[normalize-space()='Cobrança' or contains(normalize-space(.), 'Cobrança')]")
+                        await page.wait_for_timeout(2000)
+                    except Exception:
+                        pass
+                        
+            await log_progress("Automação de boletos concluída com sucesso!", "success")
+            
+        except Exception as global_ex:
+            await log_progress(f"Erro global na automação do Bradesco: {str(global_ex)}", "error")
+            raise global_ex
+            
+        finally:
+            await browser.close()
