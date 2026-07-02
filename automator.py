@@ -1090,14 +1090,14 @@ def extract_invoice_number_from_pdf(pdf_path):
     if not is_pdf_file(pdf_path):
         return None, ""
     try:
-        result = subprocess.run(
-            ["pdftotext", pdf_path, "-"],
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=20,
-        )
-        text = result.stdout or ""
+        from pypdf import PdfReader
+        reader = PdfReader(pdf_path)
+        text_list = []
+        for page in reader.pages:
+            t = page.extract_text()
+            if t:
+                text_list.append(t)
+        text = "\n".join(text_list)
         return extract_invoice_number_from_text(text), text
     except Exception:
         return None, ""

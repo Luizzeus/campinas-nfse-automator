@@ -17,3 +17,9 @@ screenshots/
 venv/
 .venv/
 env/
+
+# Local logs
+*.log
+
+# Portable Git
+mingit/
