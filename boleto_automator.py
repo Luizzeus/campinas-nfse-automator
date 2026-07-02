@@ -108,6 +108,27 @@ async def click_first_available(frame, selectors, timeout_ms=15000):
             pass
     raise RuntimeError(f"None of the selectors in {selectors} could be clicked")
 
+async def select_dropdown_option(frame, select_selectors, search_texts, timeout_ms=10000):
+    for selector in select_selectors:
+        try:
+            locator = frame.locator(selector).first
+            await locator.wait_for(state="attached", timeout=max(1000, timeout_ms // len(select_selectors)))
+            options = await locator.evaluate("""(select) => {
+                return Array.from(select.options).map(opt => ({
+                    text: opt.text,
+                    value: opt.value,
+                    index: opt.index
+                }));
+            }""")
+            for search_text in search_texts:
+                for opt in options:
+                    if search_text.lower() in opt["text"].lower() or search_text.lower() == opt["value"].lower():
+                        await locator.select_option(index=opt["index"])
+                        return True
+        except Exception:
+            pass
+    raise RuntimeError(f"None of the selectors in {select_selectors} could select option matching {search_texts}")
+
 
 
 async def run_boleto_automation(emissions_to_process, ref_date=None, progress_callback=None):
@@ -235,6 +256,26 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                     ]
                     await fill_first_available(frame, doc_selectors, str(invoice_number))
                     
+                    # 1.5. Emission Date (Data de Emissão - data atual)
+                    today = ref_date or datetime.date.today()
+                    day_em, month_em, year_em = f"{today.day:02d}", f"{today.month:02d}", f"{today.year}"
+                    
+                    emissao_dia_selectors = [
+                        "xpath=//input[contains(@id, 'diaEmissao') or contains(@id, 'dtEmissaoDia') or contains(@id, 'txtDiaEmissao')]",
+                        "xpath=//*[contains(text(), 'Emissão') or contains(text(), 'Emissao') or contains(., 'Emissão') or contains(., 'Emissao')]/following::input[1]"
+                    ]
+                    emissao_mes_selectors = [
+                        "xpath=//input[contains(@id, 'mesEmissao') or contains(@id, 'dtEmissaoMes') or contains(@id, 'txtMesEmissao')]",
+                        "xpath=//*[contains(text(), 'Emissão') or contains(text(), 'Emissao') or contains(., 'Emissão') or contains(., 'Emissao')]/following::input[2]"
+                    ]
+                    emissao_ano_selectors = [
+                        "xpath=//input[contains(@id, 'anoEmissao') or contains(@id, 'dtEmissaoAno') or contains(@id, 'txtAnoEmissao')]",
+                        "xpath=//*[contains(text(), 'Emissão') or contains(text(), 'Emissao') or contains(., 'Emissão') or contains(., 'Emissao')]/following::input[3]"
+                    ]
+                    await fill_first_available(frame, emissao_dia_selectors, day_em)
+                    await fill_first_available(frame, emissao_mes_selectors, month_em)
+                    await fill_first_available(frame, emissao_ano_selectors, year_em)
+                    
                     # 2. Due Date (Vencimento)
                     day, month, year = get_due_date_for_client(ref_date, due_day)
                     await log_progress(f"Calculada data de vencimento: {day}/{month}/{year}", "running")
@@ -279,13 +320,7 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                         "xpath=//*[contains(text(), 'Multa') or contains(., 'Multa')]/following::input[2]"
                     ]
                     
-                    try:
-                        await select_first_available(frame, multa_selectors, "%")
-                    except Exception:
-                        try:
-                            await select_first_available(frame, multa_selectors, "2")
-                        except Exception:
-                            pass
+                    await select_dropdown_option(frame, multa_selectors, ["%", "percentual", "percent", "taxa"])
                     await fill_first_available(frame, multa_val_selectors, "2,00")
                     await fill_first_available(frame, multa_dias_selectors, "1")
                     
@@ -303,13 +338,7 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                         "xpath=//*[contains(text(), 'Juros') or contains(., 'Juros')]/following::input[2]"
                     ]
                     
-                    try:
-                        await select_first_available(frame, juros_selectors, "%")
-                    except Exception:
-                        try:
-                            await select_first_available(frame, juros_selectors, "1")
-                        except Exception:
-                            pass
+                    await select_dropdown_option(frame, juros_selectors, ["%", "percentual", "percent", "taxa"])
                     await fill_first_available(frame, juros_val_selectors, "1,00")
                     await fill_first_available(frame, juros_dias_selectors, "1")
                         
