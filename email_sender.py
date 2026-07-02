@@ -124,7 +124,7 @@ def list_boleto_candidates(competence):
                 seen.add(path)
                 stem = os.path.splitext(filename)[0]
                 normalized_name = normalize_filename_part(stem)
-                if not normalized_name.startswith("bradesco_"):
+                if not (normalized_name.startswith("bradesco_") or normalized_name.startswith("boleto_")):
                     continue
                 candidates.append({
                     "path": path,
@@ -140,12 +140,13 @@ def find_boleto_file(client_name, invoice_number, competence):
     if not normalized_invoice:
         return None
 
-    expected_prefix = f"bradesco_{normalized_client}_{normalized_invoice}"
+    expected_prefix_bradesco = f"bradesco_{normalized_client}_{normalized_invoice}"
+    expected_prefix_boleto = f"boleto_{normalized_client}_{normalized_invoice}"
     candidates = list_boleto_candidates(competence)
 
-    # Exact historical rule: Bradesco_Nome_do_Cliente_Numero_da_Nota.
+    # Exact historical rule: Bradesco_Nome_do_Cliente_Numero_da_Nota or Boleto_Nome_do_Cliente_Numero_da_Nota
     for candidate in candidates:
-        if candidate["normalized_name"].startswith(expected_prefix):
+        if candidate["normalized_name"].startswith(expected_prefix_bradesco) or candidate["normalized_name"].startswith(expected_prefix_boleto):
             return candidate["path"]
 
     # Correction routine: when the invoice number uniquely identifies a Bradesco

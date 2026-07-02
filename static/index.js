@@ -541,7 +541,8 @@ async function loadEmissionsHistory() {
             if (e.boleto_status === 'gerado' && e.boleto_pdf_path) {
                 const boletoLink = document.createElement('a');
                 const index = e.boleto_pdf_path.indexOf('/boletos/');
-                const url = index !== -1 ? e.boleto_pdf_path.substring(index) : '#';
+                const indexInv = e.boleto_pdf_path.indexOf('/invoices/');
+                const url = index !== -1 ? e.boleto_pdf_path.substring(index) : (indexInv !== -1 ? e.boleto_pdf_path.substring(indexInv) : '#');
                 boletoLink.href = url;
                 boletoLink.target = '_blank';
                 boletoLink.className = 'btn btn-icon';
