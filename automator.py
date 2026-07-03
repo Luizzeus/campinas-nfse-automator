@@ -1911,22 +1911,21 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
                         # Fill CNPJ/CPF of tomador
                         cnpj_field_sel = 'xpath=//input[contains(@id, "CpfCnpj") or contains(@name, "CpfCnpj")]'
                         cnpj_field = await first_visible_locator(page, cnpj_field_sel, timeout_ms=10000, require_enabled=True)
-                        await cnpj_field.click()
-                        await page.keyboard.press("Control+A")
-                        await page.keyboard.press("Backspace")
-                        await cnpj_field.press_sequentially(client_cnpj, delay=100)
-                        await page.wait_for_timeout(500)
-                        await cnpj_field.press("Tab")
+                        cnpj_id = await cnpj_field.get_attribute("id")
+                        client_cnpj_formatted = client["cnpj_cpf"] # formatted value e.g. "60.993.193/0001-50"
                         
+                        await log_progress(f"Preenchendo CNPJ/CPF do Tomador: {client_cnpj_formatted}", "running", client_id)
                         await page.evaluate("""
-                            (el) => {
+                            (args) => {
+                                const el = document.getElementById(args.id);
                                 if (el) {
+                                    el.value = args.val;
                                     el.dispatchEvent(new Event('input', { bubbles: true }));
                                     el.dispatchEvent(new Event('change', { bubbles: true }));
                                     el.dispatchEvent(new Event('blur', { bubbles: true }));
                                 }
                             }
-                        """, cnpj_field)
+                        """, {"id": cnpj_id, "val": client_cnpj_formatted})
                         await page.wait_for_timeout(1000)
                         
                         # Click the "Pesquisar" button next to CNPJ field
