@@ -67,6 +67,7 @@ const clientNameInput = document.getElementById('client-name');
 const clientCnpjInput = document.getElementById('client-cnpj');
 const clientInvoiceValInput = document.getElementById('client-invoice-val');
 const clientBillingValInput = document.getElementById('client-billing-val');
+const clientBradescoPayerNameInput = document.getElementById('client-bradesco-payer-name');
 const clientRefNoteInput = document.getElementById('client-ref-note');
 const clientRetentionSelect = document.getElementById('client-retention');
 const clientEmailInput = document.getElementById('client-email');
@@ -985,6 +986,7 @@ function initModalEvents() {
             cnpj_cpf: clientCnpjInput.value.trim(),
             invoice_value: parseFloat(clientInvoiceValInput.value),
             boleto_value: parseFloat(clientBillingValInput.value),
+            bradesco_payer_name: clientBradescoPayerNameInput.value.trim(),
             reference_note: clientRefNoteInput.value.trim(),
             retention_type: clientRetentionSelect.value,
             emails: clientEmailInput.value.trim(),
@@ -1022,6 +1024,7 @@ function openClientModal(client = null) {
         clientCnpjInput.value = client.cnpj_cpf;
         clientInvoiceValInput.value = client.invoice_value;
         clientBillingValInput.value = client.boleto_value;
+        clientBradescoPayerNameInput.value = client.bradesco_payer_name || '';
         clientRefNoteInput.value = client.reference_note || '';
         clientRetentionSelect.value = client.retention_type;
         clientEmailInput.value = client.emails || '';

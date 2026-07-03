@@ -53,6 +53,7 @@ class ClientModel(BaseModel):
     description_template: str
     emails: Optional[str] = ""
     requires_boleto: bool = True
+    bradesco_payer_name: Optional[str] = ""
 
 class ConfigModel(BaseModel):
     portal_cnpj: str
@@ -134,22 +135,22 @@ def save_client(client: ClientModel):
         cursor.execute("""
             UPDATE clients 
             SET cnpj_cpf = ?, name = ?, invoice_value = ?, boleto_value = ?, 
-                reference_note = ?, retention_type = ?, description_template = ?, emails = ?, requires_boleto = ?
+                reference_note = ?, retention_type = ?, description_template = ?, emails = ?, requires_boleto = ?, bradesco_payer_name = ?
             WHERE id = ?
         """, (
             client.cnpj_cpf, client.name, client.invoice_value, client.boleto_value,
             client.reference_note, client.retention_type, client.description_template,
-            client.emails, 1 if client.requires_boleto else 0, client.id
+            client.emails, 1 if client.requires_boleto else 0, client.bradesco_payer_name or "", client.id
         ))
     else:
         # Insert
         cursor.execute("""
-            INSERT INTO clients (cnpj_cpf, name, invoice_value, boleto_value, reference_note, retention_type, description_template, emails, requires_boleto)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO clients (cnpj_cpf, name, invoice_value, boleto_value, reference_note, retention_type, description_template, emails, requires_boleto, bradesco_payer_name)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             client.cnpj_cpf, client.name, client.invoice_value, client.boleto_value,
             client.reference_note, client.retention_type, client.description_template,
-            client.emails, 1 if client.requires_boleto else 0
+            client.emails, 1 if client.requires_boleto else 0, client.bradesco_payer_name or ""
         ))
     
     conn.commit()
@@ -399,7 +400,7 @@ async def execute_boleto_automation_task(client_ids: List[int], ref_date_str: Op
         emissions_to_process = []
         for client_id in client_ids:
             cursor.execute("""
-                SELECT e.id as emission_id, e.invoice_number, c.name as client_name, c.cnpj_cpf, c.boleto_value, c.due_day
+                SELECT e.id as emission_id, e.invoice_number, c.name as client_name, c.cnpj_cpf, c.boleto_value, c.due_day, c.bradesco_payer_name
                 FROM emissions e
                 JOIN clients c ON e.client_id = c.id
                 WHERE e.client_id = ? AND e.competence = ? AND e.status = 'emitida'
@@ -411,6 +412,7 @@ async def execute_boleto_automation_task(client_ids: List[int], ref_date_str: Op
                     "emission_id": row["emission_id"],
                     "client_name": row["client_name"],
                     "cnpj_cpf": row["cnpj_cpf"],
+                    "bradesco_payer_name": row["bradesco_payer_name"],
                     "invoice_number": row["invoice_number"],
                     "boleto_value": row["boleto_value"],
                     "due_day": row["due_day"]

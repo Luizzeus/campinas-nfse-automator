@@ -4,6 +4,7 @@ import re
 import datetime
 from calendar import monthrange
 import unicodedata
+from urllib.parse import urljoin
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError, async_playwright
 from database import get_db_connection
 from utils import get_competence_info
@@ -18,14 +19,33 @@ os.makedirs(SCREENSHOTS_DIR, exist_ok=True)
 # Bradesco URLs
 BRADESCO_LOGIN_URL = "https://www.ne12.bradesconetempresa.b.br/ibpjlogin/login.jsf"
 
-def get_due_date_for_client(ref_date, due_day):
-    """Calculate the due date (DD/MM/YYYY) for the current month of execution."""
-    today = ref_date or datetime.date.today()
+PAYER_NAME_ALIASES = {
+    "victor mammana": "VICTOR PELLEGRINI MAMMANA",
+}
+
+def normalize_ascii(text):
+    return unicodedata.normalize("NFKD", text or "").encode("ASCII", "ignore").decode("ASCII")
+
+def get_payer_search_names(client_name, bradesco_payer_name=None):
+    normalized_key = re.sub(r"\s+", " ", normalize_ascii(client_name).lower()).strip()
+    names = []
+    if bradesco_payer_name:
+        names.append(bradesco_payer_name)
+    alias = PAYER_NAME_ALIASES.get(normalized_key)
+    if alias and alias not in names:
+        names.append(alias)
+    if client_name and client_name not in names:
+        names.append(client_name)
+    return names
+
+def get_due_date_for_client(ref_date=None, due_day=None):
+    """Return boleto due date: always day 10 of the current execution month."""
+    today = datetime.date.today()
     month = today.month
     year = today.year
     
     days_in_month = monthrange(year, month)[1]
-    day = min(int(due_day or 10), days_in_month)
+    day = min(10, days_in_month)
     return f"{day:02d}", f"{month:02d}", f"{year}"
 
 async def wait_for_bradesco_logged_in(page, timeout_ms=180000):
@@ -74,7 +94,16 @@ async def fill_first_available(frame, selectors, value, timeout_ms=10000):
         try:
             locator = frame.locator(selector).first
             await locator.wait_for(state="attached", timeout=max(1000, timeout_ms // len(selectors)))
+            try:
+                await locator.click(timeout=1000)
+            except Exception:
+                pass
             await locator.fill(value)
+            try:
+                await locator.dispatch_event("change")
+                await locator.dispatch_event("blur")
+            except Exception:
+                pass
             return True
         except Exception:
             pass
@@ -124,10 +153,94 @@ async def select_dropdown_option(frame, select_selectors, search_texts, timeout_
                 for opt in options:
                     if search_text.lower() in opt["text"].lower() or search_text.lower() == opt["value"].lower():
                         await locator.select_option(index=opt["index"])
+                        try:
+                            await locator.dispatch_event("change")
+                        except Exception:
+                            pass
                         return True
         except Exception:
             pass
     raise RuntimeError(f"None of the selectors in {select_selectors} could select option matching {search_texts}")
+
+async def set_percent_charge(frame, select_id, value_id, days_id, percent_value, days_value):
+    select = frame.locator(f"id={select_id}").first
+    await select.wait_for(state="attached", timeout=10000)
+    await select.select_option(value="2")
+    await select.dispatch_event("change")
+    try:
+        await frame.evaluate(
+            """({selectId}) => {
+                const sel = document.getElementById(selectId);
+                if (sel) {
+                    sel.value = '2';
+                    sel.dispatchEvent(new Event('change', {bubbles: true}));
+                    if (selectId.endsWith('selectMulta') && typeof checkSelectMulta === 'function') checkSelectMulta();
+                    if (selectId.endsWith('selectJuros') && typeof checkSelectJuros === 'function') checkSelectJuros();
+                }
+            }""",
+            {"selectId": select_id}
+        )
+    except Exception:
+        pass
+    await frame.wait_for_timeout(500)
+    for field_id, field_value in [(value_id, percent_value), (days_id, days_value)]:
+        field = frame.locator(f"id={field_id}").first
+        await field.wait_for(state="attached", timeout=10000)
+        try:
+            await field.evaluate("(el) => { el.disabled = false; el.readOnly = false; el.removeAttribute('disabled'); el.removeAttribute('readonly'); }")
+        except Exception:
+            pass
+        await field.fill(str(field_value))
+        await field.dispatch_event("change")
+        await field.dispatch_event("blur")
+
+async def get_central_frame(page):
+    frame = page.frame(name="paginaCentral")
+    if not frame:
+        for f in page.frames:
+            if f.name == "paginaCentral" or "paginaCentral" in f.url or "Cobranca" in f.url or "cobranca" in f.url:
+                frame = f
+                break
+    return frame or page
+
+async def find_first_visible_in_contexts(contexts, selectors, timeout_ms=10000):
+    deadline = datetime.datetime.now() + datetime.timedelta(milliseconds=timeout_ms)
+    last_error = None
+    while datetime.datetime.now() < deadline:
+        for ctx in contexts:
+            for selector in selectors:
+                try:
+                    locator = ctx.locator(selector)
+                    count = await locator.count()
+                    for index in range(count):
+                        item = locator.nth(index)
+                        if await item.is_visible():
+                            return ctx, item
+                except Exception as exc:
+                    last_error = exc
+        await asyncio.sleep(0.3)
+    raise RuntimeError(f"Nenhum seletor visível encontrado: {selectors}. Último erro: {last_error}")
+
+async def select_payer_from_list(page, context, frame, cnpj_cpf, client_name, bradesco_payer_name=None):
+    payer_name = bradesco_payer_name or client_name
+    # Log progress internally (using standard print or log callback wrapper if accessible, or print directly)
+    print(f"[BRADESCO INFO] Digitando nome do pagador diretamente no campo: {payer_name}")
+    
+    pagador_locator = frame.locator("id=frm:txtPagador").first
+    await pagador_locator.fill(payer_name)
+    await page.wait_for_timeout(1000)
+    
+    # Try arrow down and enter in case of autocomplete popup, then tab
+    try:
+        await pagador_locator.press("ArrowDown")
+        await page.wait_for_timeout(500)
+        await pagador_locator.press("Enter")
+        await page.wait_for_timeout(500)
+    except Exception:
+        pass
+        
+    await pagador_locator.press("Tab")
+    await page.wait_for_timeout(2000)
 
 
 
@@ -214,6 +327,7 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                 invoice_number = item["invoice_number"]
                 boleto_value = item["boleto_value"]
                 due_day = item["due_day"]
+                bradesco_payer_name = item.get("bradesco_payer_name") or ""
                 
                 await log_progress(f"Iniciando geração de boleto para: {client_name} (Nota Nº {invoice_number})", "running")
                 
@@ -226,14 +340,8 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                     await page.wait_for_timeout(3000)
                     
                     # Locate the central frame
-                    frame = page.frame(name="paginaCentral")
-                    if not frame:
-                        for f in page.frames:
-                            if f.name == "paginaCentral" or "paginaCentral" in f.url or "Cobranca" in f.url or "cobranca" in f.url:
-                                frame = f
-                                break
-                    if not frame:
-                        frame = page
+                    frame = await get_central_frame(page)
+                    if frame == page:
                         await log_progress("Aviso: Quadro paginaCentral não encontrado. Usando página principal.", "warning")
                     else:
                         await log_progress("Quadro paginaCentral localizado com sucesso.", "running")
@@ -292,8 +400,8 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                     except Exception:
                         pass
                     
-                    # 2. Due Date (Vencimento)
-                    day, month, year = get_due_date_for_client(ref_date, due_day)
+                    # 2. Due Date (Vencimento): always day 10 of the current month.
+                    day, month, year = get_due_date_for_client()
                     await log_progress(f"Calculada data de vencimento: {day}/{month}/{year}", "running")
                     
                     # Bradesco has separate vencimento input fields when QR Code is enabled vs disabled
@@ -317,63 +425,27 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                     await fill_first_available(frame, val_selectors, val_str)
                     
                     # 4. Multa e Juros
-                    # Multa: Select %, Value 2,00, Days 1
-                    multa_selectors = ["id=frm:selectMulta"]
-                    multa_val_selectors = ["id=frm:textValorMulta"]
-                    multa_dias_selectors = ["id=frm:vencimentoMulta"]
-                    
-                    await select_dropdown_option(frame, multa_selectors, ["%", "percentual", "percent", "taxa"])
-                    await fill_first_available(frame, multa_val_selectors, "2,00")
-                    await fill_first_available(frame, multa_dias_selectors, "1")
-                    
-                    # Juros: Select %, Value 1,00, Days 1
-                    juros_selectors = ["id=frm:selectJuros"]
-                    juros_val_selectors = ["id=frm:textValorJuros"]
-                    juros_dias_selectors = ["id=frm:vencimentoJuros"]
-                    
-                    await select_dropdown_option(frame, juros_selectors, ["%", "percentual", "percent", "taxa"])
-                    await fill_first_available(frame, juros_val_selectors, "1,00")
-                    await fill_first_available(frame, juros_dias_selectors, "1")
-                        
-                    # Click next (Avançar)
+                    # Multa: % 2,00, cobrar após 1 dia do vencimento.
+                    await set_percent_charge(frame, "frm:selectMulta", "frm:textValorMulta", "frm:vencimentoMulta", "2,00", "1")
+
+                    # Juros: % 1,00, cobrar após 1 dia do vencimento.
+                    await set_percent_charge(frame, "frm:selectJuros", "frm:textValorJuros", "frm:vencimentoJuros", "1,00", "1")
+
+                    # 5. Pagador Search & Selection, before the first Avançar.
+                    await log_progress("Selecionando pagador (cliente)...", "running")
+                    await select_payer_from_list(page, context, frame, cnpj_cpf, client_name, bradesco_payer_name)
+                    await page.bring_to_front()
+                    frame = await get_central_frame(page)
+
+                    # Click Avançar on the filled boleto form.
+                    await log_progress("Clicando em Avançar para abrir a confirmação do boleto...", "running")
                     avancar_sel = "id=frm:botaoAvancar"
                     await click_element(frame, avancar_sel)
-                    await page.wait_for_timeout(3000)
-                    
-                    # Passo 3: Pagador Search & Selection
-                    await log_progress("Selecionando pagador (cliente)...", "running")
-                    
-                    # Click "Lista de pagadores"
-                    lista_pagadores_sel = "id=frm:linkListaPagadores"
-                    
-                    popup = None
-                    try:
-                        async with context.expect_page(timeout=10000) as page_info:
-                            await click_element(frame, lista_pagadores_sel)
-                        popup = await page_info.value
-                    except Exception:
-                        if len(context.pages) > 1:
-                            popup = context.pages[-1]
-                            
-                    target_page = popup if popup else page
-                    await target_page.bring_to_front()
-                    await target_page.wait_for_timeout(2000)
-                    
-                    # Search by CNPJ/CPF inside the search window/element
-                    search_cnpj_sel = "xpath=//input[contains(@id, 'cnpj') or contains(@id, 'cpf') or contains(@name, 'cnpj') or contains(@name, 'cpf')]"
-                    await target_page.fill(search_cnpj_sel, cnpj_cpf)
-                    
-                    buscar_btn_sel = "xpath=//input[contains(@value, 'Buscar') or contains(@value, 'Pesquisar') or contains(@id, 'btnBuscar') or contains(@id, 'botaoBuscar')]"
-                    await click_element(target_page, buscar_btn_sel)
-                    await target_page.wait_for_timeout(2000)
-                    
-                    # Select the client from search results
-                    select_client_sel = "xpath=//a[contains(normalize-space(.), 'Selecionar') or contains(normalize-space(.), 'OK') or contains(@id, 'lnkSelecionar')]"
-                    await click_element(target_page, select_client_sel)
-                    await page.wait_for_timeout(2000)
-                    
-                    # Click Avançar/Confirmar to generate the boleto
-                    confirmar_sel = "xpath=//input[contains(@value, 'Avançar') or contains(@value, 'Avancar') or contains(@value, 'Confirmar') or contains(@value, 'Emitir') or contains(@value, 'Gerar') or contains(@id, 'botaoConfirmar') or contains(@id, 'botaoAvancar') or @type='submit']"
+                    await page.wait_for_timeout(4000)
+
+                    frame = await get_central_frame(page)
+                    await log_progress("Confirmando emissão do boleto...", "running")
+                    confirmar_sel = "xpath=//*[self::input or self::button or self::a][contains(@value, 'Avançar') or contains(@value, 'Avancar') or contains(normalize-space(.), 'Avançar') or contains(normalize-space(.), 'Avancar') or contains(@value, 'Emitir') or contains(normalize-space(.), 'Emitir') or contains(@id, 'botaoAvancar') or contains(@id, 'botaoConfirmar')]"
                     await click_element(frame, confirmar_sel)
                     await page.wait_for_timeout(4000)
                     
@@ -405,7 +477,7 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                     filename = f"Boleto_{slug_client}_{invoice_number}_{date_for_filename}.pdf"
                     pdf_path = os.path.join(invoice_folder, filename)
                     
-                    async with page.expect_download(timeout=30000) as download_info:
+                    async with target_save_page.expect_download(timeout=30000) as download_info:
                         await click_element(target_save_page, pdf_option_sel)
                     download = await download_info.value
                     await download.save_as(pdf_path)
@@ -415,9 +487,14 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                     cursor = conn.cursor()
                     cursor.execute("""
                         UPDATE emissions
-                        SET boleto_status = 'gerado', boleto_pdf_path = ?, boleto_error_message = NULL, boleto_screenshot_path = NULL
+                        SET boleto_status = 'gerado',
+                            boleto_pdf_path = ?,
+                            boleto_due_date = ?,
+                            boleto_value = ?,
+                            boleto_error_message = NULL,
+                            boleto_screenshot_path = NULL
                         WHERE id = ?
-                    """, (pdf_path, emission_id))
+                    """, (pdf_path, f"{day}/{month}/{year}", boleto_value, emission_id))
                     conn.commit()
                     conn.close()
                     

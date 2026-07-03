@@ -26,7 +26,8 @@ def init_db():
         emails TEXT,
         retention_type TEXT NOT NULL, -- 'ISSQN retido', 'Sem retenção', 'Pagamento por depósito bancário'
         active INTEGER DEFAULT 1,
-        requires_boleto INTEGER DEFAULT 1
+        requires_boleto INTEGER DEFAULT 1,
+        bradesco_payer_name TEXT DEFAULT ''
     )
     """)
     
@@ -87,6 +88,13 @@ def init_db():
     client_columns = {row["name"] for row in cursor.fetchall()}
     if "requires_boleto" not in client_columns:
         cursor.execute("ALTER TABLE clients ADD COLUMN requires_boleto INTEGER DEFAULT 1")
+    if "bradesco_payer_name" not in client_columns:
+        cursor.execute("ALTER TABLE clients ADD COLUMN bradesco_payer_name TEXT DEFAULT ''")
+    cursor.execute("""
+        UPDATE clients
+        SET bradesco_payer_name = ?
+        WHERE lower(name) = lower(?) AND (bradesco_payer_name IS NULL OR trim(bradesco_payer_name) = '')
+    """, ("VICTOR PELLEGRINI MAMMANA", "Victor Mammana"))
     cursor.execute("""
         UPDATE clients
         SET requires_boleto = 0
