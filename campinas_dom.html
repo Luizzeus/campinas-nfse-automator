@@ -1,0 +1,1208 @@
+<!DOCTYPE html><html lang="pt-BR" xmlns="http://www.w3.org/1999/xhtml"><head id="j_idt2" class="multitenant-11" multitenant="11"><style type="text/css">.swal-icon--error{border-color:#f27474;-webkit-animation:animateErrorIcon .5s;animation:animateErrorIcon .5s}.swal-icon--error__x-mark{position:relative;display:block;-webkit-animation:animateXMark .5s;animation:animateXMark .5s}.swal-icon--error__line{position:absolute;height:5px;width:47px;background-color:#f27474;display:block;top:37px;border-radius:2px}.swal-icon--error__line--left{-webkit-transform:rotate(45deg);transform:rotate(45deg);left:17px}.swal-icon--error__line--right{-webkit-transform:rotate(-45deg);transform:rotate(-45deg);right:16px}@-webkit-keyframes animateErrorIcon{0%{-webkit-transform:rotateX(100deg);transform:rotateX(100deg);opacity:0}to{-webkit-transform:rotateX(0deg);transform:rotateX(0deg);opacity:1}}@keyframes animateErrorIcon{0%{-webkit-transform:rotateX(100deg);transform:rotateX(100deg);opacity:0}to{-webkit-transform:rotateX(0deg);transform:rotateX(0deg);opacity:1}}@-webkit-keyframes animateXMark{0%{-webkit-transform:scale(.4);transform:scale(.4);margin-top:26px;opacity:0}50%{-webkit-transform:scale(.4);transform:scale(.4);margin-top:26px;opacity:0}80%{-webkit-transform:scale(1.15);transform:scale(1.15);margin-top:-6px}to{-webkit-transform:scale(1);transform:scale(1);margin-top:0;opacity:1}}@keyframes animateXMark{0%{-webkit-transform:scale(.4);transform:scale(.4);margin-top:26px;opacity:0}50%{-webkit-transform:scale(.4);transform:scale(.4);margin-top:26px;opacity:0}80%{-webkit-transform:scale(1.15);transform:scale(1.15);margin-top:-6px}to{-webkit-transform:scale(1);transform:scale(1);margin-top:0;opacity:1}}.swal-icon--warning{border-color:#f8bb86;-webkit-animation:pulseWarning .75s infinite alternate;animation:pulseWarning .75s infinite alternate}.swal-icon--warning__body{width:5px;height:47px;top:10px;border-radius:2px;margin-left:-2px}.swal-icon--warning__body,.swal-icon--warning__dot{position:absolute;left:50%;background-color:#f8bb86}.swal-icon--warning__dot{width:7px;height:7px;border-radius:50%;margin-left:-4px;bottom:-11px}@-webkit-keyframes pulseWarning{0%{border-color:#f8d486}to{border-color:#f8bb86}}@keyframes pulseWarning{0%{border-color:#f8d486}to{border-color:#f8bb86}}.swal-icon--success{border-color:#a5dc86}.swal-icon--success:after,.swal-icon--success:before{content:"";border-radius:50%;position:absolute;width:60px;height:120px;background:#fff;-webkit-transform:rotate(45deg);transform:rotate(45deg)}.swal-icon--success:before{border-radius:120px 0 0 120px;top:-7px;left:-33px;-webkit-transform:rotate(-45deg);transform:rotate(-45deg);-webkit-transform-origin:60px 60px;transform-origin:60px 60px}.swal-icon--success:after{border-radius:0 120px 120px 0;top:-11px;left:30px;-webkit-transform:rotate(-45deg);transform:rotate(-45deg);-webkit-transform-origin:0 60px;transform-origin:0 60px;-webkit-animation:rotatePlaceholder 4.25s ease-in;animation:rotatePlaceholder 4.25s ease-in}.swal-icon--success__ring{width:80px;height:80px;border:4px solid hsla(98,55%,69%,.2);border-radius:50%;box-sizing:content-box;position:absolute;left:-4px;top:-4px;z-index:2}.swal-icon--success__hide-corners{width:5px;height:90px;background-color:#fff;padding:1px;position:absolute;left:28px;top:8px;z-index:1;-webkit-transform:rotate(-45deg);transform:rotate(-45deg)}.swal-icon--success__line{height:5px;background-color:#a5dc86;display:block;border-radius:2px;position:absolute;z-index:2}.swal-icon--success__line--tip{width:25px;left:14px;top:46px;-webkit-transform:rotate(45deg);transform:rotate(45deg);-webkit-animation:animateSuccessTip .75s;animation:animateSuccessTip .75s}.swal-icon--success__line--long{width:47px;right:8px;top:38px;-webkit-transform:rotate(-45deg);transform:rotate(-45deg);-webkit-animation:animateSuccessLong .75s;animation:animateSuccessLong .75s}@-webkit-keyframes rotatePlaceholder{0%{-webkit-transform:rotate(-45deg);transform:rotate(-45deg)}5%{-webkit-transform:rotate(-45deg);transform:rotate(-45deg)}12%{-webkit-transform:rotate(-405deg);transform:rotate(-405deg)}to{-webkit-transform:rotate(-405deg);transform:rotate(-405deg)}}@keyframes rotatePlaceholder{0%{-webkit-transform:rotate(-45deg);transform:rotate(-45deg)}5%{-webkit-transform:rotate(-45deg);transform:rotate(-45deg)}12%{-webkit-transform:rotate(-405deg);transform:rotate(-405deg)}to{-webkit-transform:rotate(-405deg);transform:rotate(-405deg)}}@-webkit-keyframes animateSuccessTip{0%{width:0;left:1px;top:19px}54%{width:0;left:1px;top:19px}70%{width:50px;left:-8px;top:37px}84%{width:17px;left:21px;top:48px}to{width:25px;left:14px;top:45px}}@keyframes animateSuccessTip{0%{width:0;left:1px;top:19px}54%{width:0;left:1px;top:19px}70%{width:50px;left:-8px;top:37px}84%{width:17px;left:21px;top:48px}to{width:25px;left:14px;top:45px}}@-webkit-keyframes animateSuccessLong{0%{width:0;right:46px;top:54px}65%{width:0;right:46px;top:54px}84%{width:55px;right:0;top:35px}to{width:47px;right:8px;top:38px}}@keyframes animateSuccessLong{0%{width:0;right:46px;top:54px}65%{width:0;right:46px;top:54px}84%{width:55px;right:0;top:35px}to{width:47px;right:8px;top:38px}}.swal-icon--info{border-color:#c9dae1}.swal-icon--info:before{width:5px;height:29px;bottom:17px;border-radius:2px;margin-left:-2px}.swal-icon--info:after,.swal-icon--info:before{content:"";position:absolute;left:50%;background-color:#c9dae1}.swal-icon--info:after{width:7px;height:7px;border-radius:50%;margin-left:-3px;top:19px}.swal-icon{width:80px;height:80px;border-width:4px;border-style:solid;border-radius:50%;padding:0;position:relative;box-sizing:content-box;margin:20px auto}.swal-icon:first-child{margin-top:32px}.swal-icon--custom{width:auto;height:auto;max-width:100%;border:none;border-radius:0}.swal-icon img{max-width:100%;max-height:100%}.swal-title{color:rgba(0,0,0,.65);font-weight:600;text-transform:none;position:relative;display:block;padding:13px 16px;font-size:27px;line-height:normal;text-align:center;margin-bottom:0}.swal-title:first-child{margin-top:26px}.swal-title:not(:first-child){padding-bottom:0}.swal-title:not(:last-child){margin-bottom:13px}.swal-text{font-size:16px;position:relative;float:none;line-height:normal;vertical-align:top;text-align:left;display:inline-block;margin:0;padding:0 10px;font-weight:400;color:rgba(0,0,0,.64);max-width:calc(100% - 20px);overflow-wrap:break-word;box-sizing:border-box}.swal-text:first-child{margin-top:45px}.swal-text:last-child{margin-bottom:45px}.swal-footer{text-align:right;padding-top:13px;margin-top:13px;padding:13px 16px;border-radius:inherit;border-top-left-radius:0;border-top-right-radius:0}.swal-button-container{margin:5px;display:inline-block;position:relative}.swal-button{background-color:#7cd1f9;color:#fff;border:none;box-shadow:none;border-radius:5px;font-weight:600;font-size:14px;padding:10px 24px;margin:0;cursor:pointer}.swal-button[not:disabled]:hover{background-color:#78cbf2}.swal-button:active{background-color:#70bce0}.swal-button:focus{outline:none;box-shadow:0 0 0 1px #fff,0 0 0 3px rgba(43,114,165,.29)}.swal-button[disabled]{opacity:.5;cursor:default}.swal-button::-moz-focus-inner{border:0}.swal-button--cancel{color:#555;background-color:#efefef}.swal-button--cancel[not:disabled]:hover{background-color:#e8e8e8}.swal-button--cancel:active{background-color:#d7d7d7}.swal-button--cancel:focus{box-shadow:0 0 0 1px #fff,0 0 0 3px rgba(116,136,150,.29)}.swal-button--danger{background-color:#e64942}.swal-button--danger[not:disabled]:hover{background-color:#df4740}.swal-button--danger:active{background-color:#cf423b}.swal-button--danger:focus{box-shadow:0 0 0 1px #fff,0 0 0 3px rgba(165,43,43,.29)}.swal-content{padding:0 20px;margin-top:20px;font-size:medium}.swal-content:last-child{margin-bottom:20px}.swal-content__input,.swal-content__textarea{-webkit-appearance:none;background-color:#fff;border:none;font-size:14px;display:block;box-sizing:border-box;width:100%;border:1px solid rgba(0,0,0,.14);padding:10px 13px;border-radius:2px;transition:border-color .2s}.swal-content__input:focus,.swal-content__textarea:focus{outline:none;border-color:#6db8ff}.swal-content__textarea{resize:vertical}.swal-button--loading{color:transparent}.swal-button--loading~.swal-button__loader{opacity:1}.swal-button__loader{position:absolute;height:auto;width:43px;z-index:2;left:50%;top:50%;-webkit-transform:translateX(-50%) translateY(-50%);transform:translateX(-50%) translateY(-50%);text-align:center;pointer-events:none;opacity:0}.swal-button__loader div{display:inline-block;float:none;vertical-align:baseline;width:9px;height:9px;padding:0;border:none;margin:2px;opacity:.4;border-radius:7px;background-color:hsla(0,0%,100%,.9);transition:background .2s;-webkit-animation:swal-loading-anim 1s infinite;animation:swal-loading-anim 1s infinite}.swal-button__loader div:nth-child(3n+2){-webkit-animation-delay:.15s;animation-delay:.15s}.swal-button__loader div:nth-child(3n+3){-webkit-animation-delay:.3s;animation-delay:.3s}@-webkit-keyframes swal-loading-anim{0%{opacity:.4}20%{opacity:.4}50%{opacity:1}to{opacity:.4}}@keyframes swal-loading-anim{0%{opacity:.4}20%{opacity:.4}50%{opacity:1}to{opacity:.4}}.swal-overlay{position:fixed;top:0;bottom:0;left:0;right:0;text-align:center;font-size:0;overflow-y:auto;background-color:rgba(0,0,0,.4);z-index:10000;pointer-events:none;opacity:0;transition:opacity .3s}.swal-overlay:before{content:" ";display:inline-block;vertical-align:middle;height:100%}.swal-overlay--show-modal{opacity:1;pointer-events:auto}.swal-overlay--show-modal .swal-modal{opacity:1;pointer-events:auto;box-sizing:border-box;-webkit-animation:showSweetAlert .3s;animation:showSweetAlert .3s;will-change:transform}.swal-modal{width:478px;opacity:0;pointer-events:none;background-color:#fff;text-align:center;border-radius:5px;position:static;margin:20px auto;display:inline-block;vertical-align:middle;-webkit-transform:scale(1);transform:scale(1);-webkit-transform-origin:50% 50%;transform-origin:50% 50%;z-index:10001;transition:opacity .2s,-webkit-transform .3s;transition:transform .3s,opacity .2s;transition:transform .3s,opacity .2s,-webkit-transform .3s}@media (max-width:500px){.swal-modal{width:calc(100% - 20px)}}@-webkit-keyframes showSweetAlert{0%{-webkit-transform:scale(1);transform:scale(1)}1%{-webkit-transform:scale(.5);transform:scale(.5)}45%{-webkit-transform:scale(1.05);transform:scale(1.05)}80%{-webkit-transform:scale(.95);transform:scale(.95)}to{-webkit-transform:scale(1);transform:scale(1)}}@keyframes showSweetAlert{0%{-webkit-transform:scale(1);transform:scale(1)}1%{-webkit-transform:scale(.5);transform:scale(.5)}45%{-webkit-transform:scale(1.05);transform:scale(1.05)}80%{-webkit-transform:scale(.95);transform:scale(.95)}to{-webkit-transform:scale(1);transform:scale(1)}}</style><link type="text/css" rel="stylesheet" href="/notafiscal/javax.faces.resource/primeicons/primeicons.css.jsf?ln=primefaces&amp;v=14.0.0&amp;e=14.0.0"><link type="text/css" rel="stylesheet" href="/notafiscal/javax.faces.resource/theme.css.jsf?ln=css"><link type="text/css" rel="stylesheet" href="/notafiscal/javax.faces.resource/font-awesome/5.13.1/css/all-jsf.css.jsf?ln=webjars"><link type="text/css" rel="stylesheet" href="/notafiscal/javax.faces.resource/font-awesome/5.13.1/css/v4-shims.min-jsf.css.jsf?ln=webjars"><link type="text/css" rel="stylesheet" href="/notafiscal/javax.faces.resource/animate.css/animate.css.jsf?ln=vendor"><link type="text/css" rel="stylesheet" href="/notafiscal/javax.faces.resource/bootstrap/3.3.1/css/bootstrap-jsf.css.jsf?ln=webjars"><link type="text/css" rel="stylesheet" href="/notafiscal/javax.faces.resource/primeflex/3.3.1/primeflex.css.jsf?ln=webjars"><link type="text/css" rel="stylesheet" href="/notafiscal/javax.faces.resource/primeflex/3.3.1/themes/primeone-light.css.jsf?ln=webjars"><link type="text/css" rel="stylesheet" href="/notafiscal/javax.faces.resource/pe-icon-7-stroke/css/pe-icon-7-stroke.css.jsf?ln=fonts"><link type="text/css" rel="stylesheet" href="/notafiscal/javax.faces.resource/pe-icon-7-stroke/css/helper.css.jsf?ln=fonts"><link type="text/css" rel="stylesheet" href="/notafiscal/javax.faces.resource/style.css.jsf?ln=css"><link type="text/css" rel="stylesheet" href="/notafiscal/javax.faces.resource/toastr/build/toastr.min.css.jsf?ln=vendor"><link type="text/css" rel="stylesheet" href="/notafiscal/javax.faces.resource/jarch.css.jsf?ln=css"><link type="text/css" rel="stylesheet" href="/notafiscal/javax.faces.resource/company.css.jsf?ln=css"><link type="text/css" rel="stylesheet" href="/notafiscal/javax.faces.resource/local.css.jsf?ln=css"><script type="text/javascript" async="" src="https://www.google-analytics.com/analytics.js"></script><script type="text/javascript" async="" src="https://www.googletagmanager.com/gtag/js?id=G-VDCTH18BZV&amp;cx=c&amp;gtm=4e66u1h1"></script><script type="text/javascript" async="" src="https://www.googletagmanager.com/gtag/js?id=G-MFXMLF401Z&amp;cx=c&amp;gtm=4e66u1h1"></script><script type="text/javascript" src="/notafiscal/javax.faces.resource/jquery/jquery.js.jsf?ln=primefaces&amp;v=14.0.0&amp;e=14.0.0"></script><script type="text/javascript" src="/notafiscal/javax.faces.resource/jquery/jquery-plugins.js.jsf?ln=primefaces&amp;v=14.0.0&amp;e=14.0.0"></script><script type="text/javascript" src="/notafiscal/javax.faces.resource/core.js.jsf?ln=primefaces&amp;v=14.0.0&amp;e=14.0.0"></script><link type="text/css" rel="stylesheet" href="/notafiscal/javax.faces.resource/components.css.jsf?ln=primefaces&amp;v=14.0.0&amp;e=14.0.0"><script type="text/javascript" src="/notafiscal/javax.faces.resource/moment/moment.js.jsf?ln=primefaces&amp;v=14.0.0&amp;e=14.0.0"></script><script type="text/javascript" src="/notafiscal/javax.faces.resource/primefaces-extensions.js.jsf?ln=primefaces-extensions&amp;v=14.0.0&amp;e=14.0.0"></script><link type="text/css" rel="stylesheet" href="/notafiscal/javax.faces.resource/timer/timer.css.jsf?ln=primefaces-extensions&amp;v=14.0.0&amp;e=14.0.0"><script type="text/javascript" src="/notafiscal/javax.faces.resource/timer/timer.js.jsf?ln=primefaces-extensions&amp;v=14.0.0&amp;e=14.0.0"></script><script type="text/javascript" src="/notafiscal/javax.faces.resource/components.js.jsf?ln=primefaces&amp;v=14.0.0&amp;e=14.0.0"></script><script type="text/javascript" src="/notafiscal/javax.faces.resource/inputmask/inputmask.js.jsf?ln=primefaces&amp;v=14.0.0&amp;e=14.0.0"></script><script type="text/javascript" src="/notafiscal/javax.faces.resource/datepicker/datepicker.js.jsf?ln=primefaces&amp;v=14.0.0&amp;e=14.0.0"></script><script type="text/javascript" src="/notafiscal/javax.faces.resource/touch/touchswipe.js.jsf?ln=primefaces&amp;v=14.0.0&amp;e=14.0.0"></script><script type="text/javascript" src="/notafiscal/javax.faces.resource/inputnumber/inputnumber.js.jsf?ln=primefaces&amp;v=14.0.0&amp;e=14.0.0"></script><link type="text/css" rel="stylesheet" href="/notafiscal/javax.faces.resource/inputnumber/inputnumber.css.jsf?ln=primefaces&amp;v=14.0.0&amp;e=14.0.0"><link type="text/css" rel="stylesheet" href="/notafiscal/javax.faces.resource/texteditor/texteditor.css.jsf?ln=primefaces&amp;v=14.0.0&amp;e=14.0.0"><script type="text/javascript" src="/notafiscal/javax.faces.resource/texteditor/texteditor.js.jsf?ln=primefaces&amp;v=14.0.0&amp;e=14.0.0"></script><link type="text/css" rel="stylesheet" href="/notafiscal/javax.faces.resource/commandLinkClean.css.jsf?ln=css"><link type="text/css" rel="stylesheet" href="/notafiscal/javax.faces.resource/commandLinkSearch.css.jsf?ln=css"><link type="text/css" rel="stylesheet" href="/notafiscal/javax.faces.resource/commandLinkReturn.css.jsf?ln=css"><link type="text/css" rel="stylesheet" href="/notafiscal/javax.faces.resource/commandLinkCancel.css.jsf?ln=css"><link type="text/css" rel="stylesheet" href="/notafiscal/javax.faces.resource/commandLinkSave.css.jsf?ln=css"><link type="text/css" rel="stylesheet" href="/notafiscal/javax.faces.resource/helpDialog.css.jsf?ln=css"><link type="text/css" rel="stylesheet" href="/notafiscal/javax.faces.resource/scrollpanel/scrollpanel.css.jsf?ln=primefaces&amp;v=14.0.0&amp;e=14.0.0"><script type="text/javascript" src="/notafiscal/javax.faces.resource/scrollpanel/scrollpanel.js.jsf?ln=primefaces&amp;v=14.0.0&amp;e=14.0.0"></script><script src="/notafiscal/javax.faces.resource/validation/validation.js.jsf?ln=primefaces&amp;v=14.0.0&amp;e=14.0.0"></script><script src="/notafiscal/javax.faces.resource/validation/validation.bv.js.jsf?ln=primefaces&amp;v=14.0.0&amp;e=14.0.0"></script><script src="/notafiscal/javax.faces.resource/locales/locale-pt.js.jsf?ln=primefaces&amp;v=14.0.0&amp;e=14.0.0"></script><script type="text/javascript">if(window.PrimeFaces){PrimeFaces.settings.locale='pt_BR';PrimeFaces.settings.viewId='/paginas/notafiscal/emissaoNotaFiscalData.xhtml';PrimeFaces.settings.contextPath='/notafiscal';PrimeFaces.settings.cookiesSecure=false;PrimeFaces.settings.validateEmptyFields=true;PrimeFaces.settings.considerEmptyStringNull=true;}</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <title>NFS-e | CAMPINAS</title>
+
+    <link rel="shortcut icon" href="/notafiscal/resources/images/logo-login.png">
+        <style type="text/css">
+            .ui-selectonemenu-panel .ui-selectonemenu-list-item {
+                border: 0 none;
+                margin: 1px 0;
+                padding: 3px 5px;
+                text-align: left;
+                white-space: pre-line;
+            }
+
+            .ui-selectonemenu label.ui-selectonemenu-label {
+                text-wrap: pretty;
+                cursor: pointer;
+            }
+        </style>
+        <link rel="stylesheet" href="../../resources/css_novo/style.css"><script type="text/javascript" src="/notafiscal/javax.faces.resource/toastr/build/toastr.min.js.jsf?ln=vendor"></script><style type="text/css">.jqstooltip { position: absolute;left: 0px;top: 0px;visibility: hidden;background: rgb(0, 0, 0) transparent;background-color: rgba(0,0,0,0.6);filter:progid:DXImageTransform.Microsoft.gradient(startColorstr=#99000000, endColorstr=#99000000);-ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr=#99000000, endColorstr=#99000000)";color: white;font: 10px arial, san serif;text-align: left;white-space: nowrap;padding: 5px;border: 1px solid white;z-index: 10000;}.jqsfield { color: white;font: 10px arial, san serif;text-align: left;}</style></head><body class="show-sidebar multitenant-11" multitenant="11"><div id="messageHeader:messageHeader" class="messageheader base-messageheader messageheader">
+        <script type="application/javascript">
+
+            $('.toast').hide(function () {
+                $(this).remove();
+            });
+
+            // if (configToastr != undefined) {
+            //     configToastr();
+            // }
+
+            var message = ' ';
+
+            if (message.trim() != '') {
+                try {
+                    hideMessageProcess();
+                } catch (e) {
+
+                }
+                toastr.info(message);
+            }
+
+            message = ' ';
+
+            if (message.trim() != '') {
+                try {
+                    hideMessageProcess();
+                } catch (e) {
+
+                }
+                toastr.warning(message);
+            }
+
+            message = ' ';
+
+            if (message.trim() != '') {
+                try {
+                    hideMessageProcess();
+                } catch (e) {
+
+                }
+                toastr.error(message);
+            }
+
+            message = ' ';
+
+            if (message.trim() != '') {
+                try {
+                    hideMessageProcess();
+                } catch (e) {
+
+                }
+                toastr.success(message);
+            }
+        </script></div>
+        <div id="template-base" class="show-sidebar"><header id="header" style="display: block">
+                <div class="color-line">
+
+                </div>
+
+                <div id="logo" class="light-version">
+                    <div class="logo-menu">
+                        <p class="descricao-sistema-menu" style="margin-top: -10px">Nota Fiscal de Serviço Eletrônica</p>
+                    </div>
+                </div>
+
+                <nav role="navigation">
+                    <div class="header-link hide-menu">
+                        Menu <i class="fa fa-bars"></i>
+                    </div>
+
+                    <div class="small-logo">
+                        <div class="logo-menu" style="padding: 5px">
+                            <p class="descricao-sistema-menu">NFS-e</p>
+                        </div>
+                    </div>
+
+                    <div class="mobile-menu">
+
+                        <button id="button-menu" type="button" class="navbar-toggle mobile-menu-toggle" data-toggle="collapse" data-target="#mobile-collapse-menu" onclick="$('#button-icons').removeClass('collapsed'); $('#mobile-collapse-icon').removeClass('collapsed'); $('#mobile-collapse-icon').removeClass('in'); ">
+                            <i class="fa fa-bars"></i> Menu
+                        </button>
+
+                        <div id="mobile-collapse-menu" class="collapse mobile-navbar">
+<form id="j_idt25" name="j_idt25" method="post" action="/notafiscal/paginas/notafiscal/emissaoNotaFiscalData.jsf" enctype="application/x-www-form-urlencoded">
+<input type="hidden" name="j_idt25" value="j_idt25">
+<input type="hidden" name="javax.faces.ViewState" id="j_id1:javax.faces.ViewState:0" value="-1095635306594764140:196538100140560192" autocomplete="off">
+
+
+    <ul class="side-menu nav">	<li id="0">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Alteração Senha'}]); redirectURL([{name:'urlMenu', value:'../login/alterarSenha.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Alteração Senha</span> 		</a> 	</li> 	<li id="15877">		<a onclick="saveMenuParent([{name:'nameMenu', value:'2° via Guia Construção Civil'}]); redirectURL([{name:'urlMenu', value:'../guia/guiaConstrucaoCivil.jsf'}]); showMessageProcess(true);">			<span class="nav-label">2° via Guia Construção Civil</span> 		</a> 	</li> 	<li id="16864">		<a onclick="saveMenuParent([{name:'nameMenu', value:'2° via Guia Profissional Autônomo'}]); redirectURL([{name:'urlMenu', value:'../guia/guiaProfissionalAutonomo.jsf'}]); showMessageProcess(true);">			<span class="nav-label">2° via Guia Profissional Autônomo</span> 		</a> 	</li> 	<li id="15871">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Abertura de Requerimentos'}]); redirectURL([{name:'urlMenu', value:'https://requerimentos.campinas.sp.gov.br/externo/login/'}]); showMessageProcess(true);">			<span class="nav-label">Abertura de Requerimentos</span> 		</a> 	</li> <li id="15817" class=""> 		<a href="#"> 			<span class="nav-label">Administrar Cadastros</span> 			<span class="fa arrow"> </span> 		</a> 		<ul class="nav nav-second-level collapse" onclick=""> 	<li id="15881">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Administrar Cadastros-&gt;Cadastro de Mapa'}]); redirectURL([{name:'urlMenu', value:'../notamaterial/notaMaterialList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Cadastro de Mapa</span> 		</a> 	</li> 	<li id="15879">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Administrar Cadastros-&gt;Cadastros de Obras'}]); redirectURL([{name:'urlMenu', value:'../obra/obraList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Cadastros de Obras</span> 		</a> 	</li> 	<li id="15851">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Administrar Cadastros-&gt;Cadastros de Tomadores/Prestadores'}]); redirectURL([{name:'urlMenu', value:'../pessoa/pessoaList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Cadastros de Tomadores/Prestadores</span> 		</a> 	</li> 		</ul> 	</li> 	<li id="16944">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Apuração ISSQN Construção Civil'}]); redirectURL([{name:'urlMenu', value:'',}]); showMessageProcess(false); " href="https://requerimentos.campinas.sp.gov.br/externo/rascunhos/novo?id=fef427b918fbae7e9f888cc774eb770e0f367513" target="_blank" ignorar=" ''}]); showMessageProcess(true);">			<span class="nav-label">Apuração ISSQN Construção Civil</span> 		</a> 	</li> 	<li id="15826">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Configuração Empresa'}]); redirectURL([{name:'urlMenu', value:'../configuracaoempresa/configuracaoEmpresaList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Configuração Empresa</span> 		</a> 	</li> 	<li id="15847">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Denúncia Espontânea'}]); redirectURL([{name:'urlMenu', value:'../denunciaespontanea/denunciaEspontaneaList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Denúncia Espontânea</span> 		</a> 	</li> <li id="16126" class=""> 		<a href="#"> 			<span class="nav-label">DOCEC</span> 			<span class="fa arrow"> </span> 		</a> 		<ul class="nav nav-second-level collapse" onclick=""> 	<li id="15828">		<a onclick="saveMenuParent([{name:'nameMenu', value:'DOCEC-&gt;Declaração'}]); redirectURL([{name:'urlMenu', value:'../declaracaocondominio/declaracaoCondominioList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Declaração</span> 		</a> 	</li> 		</ul> 	</li> <li id="15819" class=""> 		<a href="#"> 			<span class="nav-label">Gerenciar NFSe</span> 			<span class="fa arrow"> </span> 		</a> 		<ul class="nav nav-second-level collapse" onclick=""> 	<li id="15873">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Gerenciar NFSe-&gt;Consulta Nota Fiscal'}]); redirectURL([{name:'urlMenu', value:'../notafiscal/notaFiscalList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Consulta Nota Fiscal</span> 		</a> 	</li> 	<li id="15862">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Gerenciar NFSe-&gt;Exportar NFSe (XML)'}]); redirectURL([{name:'urlMenu', value:'../exportacaonota/exportacaoNota.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Exportar NFSe (XML)</span> 		</a> 	</li> 	<li id="15875">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Gerenciar NFSe-&gt;Livro Fiscal'}]); redirectURL([{name:'urlMenu', value:'../livrofiscal/relatorioLivroFiscal.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Livro Fiscal</span> 		</a> 	</li> 	<li id="15876">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Gerenciar NFSe-&gt;Nota Fiscal Talão'}]); redirectURL([{name:'urlMenu', value:'../notafiscal/notaFiscalTalaoList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Nota Fiscal Talão</span> 		</a> 	</li> 		</ul> 	</li> <li id="15815" class=""> 		<a href="#"> 			<span class="nav-label">Guia</span> 			<span class="fa arrow"> </span> 		</a> 		<ul class="nav nav-second-level collapse" onclick=""> 	<li id="15844">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Guia-&gt;Emitir Guia'}]); redirectURL([{name:'urlMenu', value:'../guia/guiaList.jsf?emitir=S'}]); showMessageProcess(true);">			<span class="nav-label">Emitir Guia</span> 		</a> 	</li> 	<li id="15816">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Guia-&gt;Gerenciar Guias'}]); redirectURL([{name:'urlMenu', value:'../guia/guiaList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Gerenciar Guias</span> 		</a> 	</li> 		</ul> 	</li> 	<li id="15854">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Lote RPS'}]); redirectURL([{name:'urlMenu', value:'../loterps/loteRpsList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Lote RPS</span> 		</a> 	</li> <li id="15824" class="active"> 		<a href="#"> 			<span class="nav-label">NFSe Prestador</span> 			<span class="fa arrow"> </span> 		</a> 		<ul class="nav nav-second-level collapse in" onclick=""> 	<li id="15839">		<a onclick="saveMenuParent([{name:'nameMenu', value:'NFSe Prestador-&gt;Emitir Nota Fiscal'}]); redirectURL([{name:'urlMenu', value:'../notafiscal/emissaoNotaFiscalList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Emitir Nota Fiscal</span> 		</a> 	</li> 	<li id="15825">		<a onclick="saveMenuParent([{name:'nameMenu', value:'NFSe Prestador-&gt;Emitir Nota Fiscal Retroativa'}]); redirectURL([{name:'urlMenu', value:'../notafiscal/emissaoNotaFiscalList.jsf?TIPO=NFR'}]); showMessageProcess(true);">			<span class="nav-label">Emitir Nota Fiscal Retroativa</span> 		</a> 	</li> 		</ul> 	</li> <li id="15845" class=""> 		<a href="#"> 			<span class="nav-label">NFSE TOMADOR (Escrituração)</span> 			<span class="fa arrow"> </span> 		</a> 		<ul class="nav nav-second-level collapse" onclick=""> 	<li id="15846">		<a onclick="saveMenuParent([{name:'nameMenu', value:'NFSE TOMADOR (Escrituração)-&gt;Emitir Nota Fiscal Tomador'}]); redirectURL([{name:'urlMenu', value:'../notafiscal/emissaoNotaFiscalList.jsf?TIPO=NFT'}]); showMessageProcess(true);">			<span class="nav-label">Emitir Nota Fiscal Tomador</span> 		</a> 	</li> 	<li id="15855">		<a onclick="saveMenuParent([{name:'nameMenu', value:'NFSE TOMADOR (Escrituração)-&gt;Importação Nota Tomador'}]); redirectURL([{name:'urlMenu', value:'../importacaotomador/importacaoTomadorList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Importação Nota Tomador</span> 		</a> 	</li> 		</ul> 	</li> 	<li id="15848">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Procuração Eletrônica'}]); redirectURL([{name:'urlMenu', value:'../procuracao/procuracaoList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Procuração Eletrônica</span> 		</a> 	</li> 	<li id="16844">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Reforma Tributária'}]); redirectURL([{name:'urlMenu', value:'',}]); showMessageProcess(false); " href="https://campinas.sp.gov.br/sites/reformatributaria" target="_blank" ignorar=" ''}]); showMessageProcess(true);">			<span class="nav-label">Reforma Tributária</span> 		</a> 	</li> <li id="16684" class=""> 		<a href="#"> 			<span class="nav-label">RELATÓRIOS ASSÍNCRONOS</span> 			<span class="fa arrow"> </span> 		</a> 		<ul class="nav nav-second-level collapse" onclick=""> 	<li id="16686">		<a onclick="saveMenuParent([{name:'nameMenu', value:'RELATÓRIOS ASSÍNCRONOS-&gt;CONSULTA RELATÓRIOS ASSÍNCRONOS'}]); redirectURL([{name:'urlMenu', value:'../agendamento/agendamentoList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">CONSULTA RELATÓRIOS ASSÍNCRONOS</span> 		</a> 	</li> 		</ul> 	</li> 	<li id="15878">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Repasse Plano de Saúde'}]); redirectURL([{name:'urlMenu', value:'../declaracaodeducao/declaracaoDeducaoList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Repasse Plano de Saúde</span> 		</a> 	</li> <li id="15852" class=""> 		<a href="#"> 			<span class="nav-label">Salão Parceiro</span> 			<span class="fa arrow"> </span> 		</a> 		<ul class="nav nav-second-level collapse" onclick=""> 	<li id="15853">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Salão Parceiro-&gt;Declaração Profissional Salão Parceiro'}]); redirectURL([{name:'urlMenu', value:'../declaracaosalaoparceiro/declaracaoSalaoParceiroList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Declaração Profissional Salão Parceiro</span> 		</a> 	</li> 	<li id="16924">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Salão Parceiro-&gt;Declaração Serviços Salão Parceiro'}]); redirectURL([{name:'urlMenu', value:'../precoservico/precoServicoList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Declaração Serviços Salão Parceiro</span> 		</a> 	</li> 		</ul> 	</li> <li id="15837" class=""> 		<a href="#"> 			<span class="nav-label">Sociedade de Profissionais</span> 			<span class="fa arrow"> </span> 		</a> 		<ul class="nav nav-second-level collapse" onclick=""> 	<li id="15838">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Sociedade de Profissionais-&gt;Declaração Profissionais Habilitados da Sociedade de Profissionais'}]); redirectURL([{name:'urlMenu', value:'../sociedadecivil/sociedadeCivilDeclaracaoList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Declaração Profissionais Habilitados da Sociedade de Profissionais</span> 		</a> 	</li> 	<li id="15865">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Sociedade de Profissionais-&gt;Gerenciar Guia de Recolhimento'}]); redirectURL([{name:'urlMenu', value:'../sociedadecivil/sociedadeCivilGuiaList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Gerenciar Guia de Recolhimento</span> 		</a> 	</li> 		</ul> 	</li> <li id="16129" class=""> 		<a href="#"> 			<span class="nav-label">Termo de Ocorrência</span> 			<span class="fa arrow"> </span> 		</a> 		<ul class="nav nav-second-level collapse" onclick=""> 	<li id="15833">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Termo de Ocorrência-&gt;Termo Ocorrência'}]); redirectURL([{name:'urlMenu', value:'../termoocorrencia/termoOcorrenciaList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Termo Ocorrência</span> 		</a> 	</li> 		</ul> 	</li> 
+    </ul><script id="j_idt25:j_idt29" type="text/javascript">saveMenuParent = function() {return PrimeFaces.ab({s:"j_idt25:j_idt29",f:"j_idt25",pa:arguments[0]});}</script><script id="j_idt25:j_idt30" type="text/javascript">redirectURL = function() {return PrimeFaces.ab({s:"j_idt25:j_idt30",f:"j_idt25",pa:arguments[0]});}</script><script id="j_idt25:j_idt31" type="text/javascript">executeEL = function() {return PrimeFaces.ab({s:"j_idt25:j_idt31",f:"j_idt25",onco:function(xhr,status,args,data){hideMessageProcess();;},pa:arguments[0]});}</script><script id="j_idt25:j_idt32" type="text/javascript">executeELAndReload = function() {return PrimeFaces.ab({s:"j_idt25:j_idt32",f:"j_idt25",onco:function(xhr,status,args,data){location.reload();;},pa:arguments[0]});}</script>
+</form>
+                        </div>
+
+                        <button id="button-icons" type="button" class="navbar-toggle mobile-menu-toggle" data-toggle="collapse" data-target="#mobile-collapse-icon" onclick="$('#button-menu').removeClass('collapsed'); $('#mobile-collapse-menu').removeClass('collapsed'); $('#mobile-collapse-menu').removeClass('in'); ">
+                            <i class="fa fa-th"></i> Ícones
+                        </button>
+
+
+                        <div id="mobile-collapse-icon" class="collapse mobile-navbar">
+        <ul class="nav navbar-nav no-borders">
+
+
+            <li class="dropdown home nav-item-home" style="display: block">
+                <a href="../login/bemVindo.jsf" onclick="showMessageProcess()">
+                    <i class="fa fa-home"></i> Home
+                </a>
+            </li>
+                <li class="dropdown home nav-item-user" style="display: block">
+                    <a href="../usuario/alteracaoUsuario.jsf">
+                        <i class="fa fa-user-circle-o"></i> Alterar Usuário
+                    </a>
+                </li>
+                <li class="dropdown nav-item-custom">
+                    <a href="../manual/manualExibicao.jsf">
+                        <i class="fa fa-download"></i>
+                    </a>
+                </li>
+
+            
+            <li class="dropdown base-communication base-alert nav-item-alerts" style="display: none">
+                <a class="dropdown-toggle label-menu-corner" href="#" data-toggle="dropdown">
+                    <i class="fa fa-bullhorn"></i> Alertas
+                    <span class="label label-info">
+                    0
+                </span>
+                </a>
+
+                <ul class="dropdown-menu hdropdown notification animated flipInX" style="max-height: 600px; overflow: auto">
+                    <li class="title">
+                        Alerta(s) Recebido(s)
+                    </li>
+                </ul>
+            </li>
+
+            
+            <li class="dropdown base-communication base-message nav-item-messages" style="display: none">
+                <a class="dropdown-toggle label-menu-corner" href="#" data-toggle="dropdown">
+                    <i class="fa fa-envelope-o"></i> Mensagens
+                    <span class="label label-info">
+                    0
+                </span>
+                </a>
+                <ul class="dropdown-menu hdropdown notification animated flipInX" style="max-height: 600px; overflow: auto">
+                    <li class="title">
+                        <a href="../communication/communicationList.xhtml" onclick="showMessageProcess()"> Mensagem(ns) Recebida(s) </a>
+                    </li>
+                </ul>
+            </li>
+
+            <li class="dropdown nav-item-logout">
+                <a class="botaoSairMenu" href="#">
+                    <i class="fa fa-sign-out"></i> Sair
+                </a>
+            </li>
+        </ul>
+                        </div>
+                    </div>
+
+                    <div class="navbar-left logo-menu-center">
+                        
+                        <img src="../../resources/images/logo-menu-center.png" height="10px" style="margin: 0">
+                        
+                    </div>
+
+                    
+                    <div id="navbartop" class="navbar-right mr-3">
+        <ul class="nav navbar-nav no-borders">
+
+
+            <li class="dropdown home nav-item-home" style="display: block">
+                <a href="../login/bemVindo.jsf" onclick="showMessageProcess()">
+                    <i class="fa fa-home"></i> 
+                </a>
+            </li>
+                <li class="dropdown home nav-item-user" style="display: block">
+                    <a href="../usuario/alteracaoUsuario.jsf">
+                        <i class="fa fa-user-circle-o"></i> 
+                    </a>
+                </li>
+                <li class="dropdown nav-item-custom">
+                    <a href="../manual/manualExibicao.jsf">
+                        <i class="fa fa-download"></i>
+                    </a>
+                </li>
+
+            
+            <li class="dropdown base-communication base-alert nav-item-alerts" style="display: none">
+                <a class="dropdown-toggle label-menu-corner" href="#" data-toggle="dropdown">
+                    <i class="fa fa-bullhorn"></i> 
+                    <span class="label label-info">
+                    0
+                </span>
+                </a>
+
+                <ul class="dropdown-menu hdropdown notification animated flipInX" style="max-height: 600px; overflow: auto">
+                    <li class="title">
+                        Alerta(s) Recebido(s)
+                    </li>
+                </ul>
+            </li>
+
+            
+            <li class="dropdown base-communication base-message nav-item-messages" style="display: none">
+                <a class="dropdown-toggle label-menu-corner" href="#" data-toggle="dropdown">
+                    <i class="fa fa-envelope-o"></i> 
+                    <span class="label label-info">
+                    0
+                </span>
+                </a>
+                <ul class="dropdown-menu hdropdown notification animated flipInX" style="max-height: 600px; overflow: auto">
+                    <li class="title">
+                        <a href="../communication/communicationList.xhtml" onclick="showMessageProcess()"> Mensagem(ns) Recebida(s) </a>
+                    </li>
+                </ul>
+            </li>
+
+            <li class="dropdown nav-item-logout">
+                <a class="botaoSairMenu" href="#">
+                    <i class="fa fa-sign-out"></i> 
+                </a>
+            </li>
+        </ul>
+
+                    </div>
+                </nav></header><nav id="menu" style="display: block">
+                <div id="navigation">
+                    <div class="profile-picture">
+                        <a href="../login/login.jsf" style="display: none">
+                            <img src="../../resources/images/profile.jpg" class="img-circle m-b" alt="logo">
+                        </a>
+
+                        <div class="stats-label text-color">
+                            
+                            <div class="stats-label text-color">
+                                <span class="font-bold font-uppercase">
+                                    Usuário
+                                </span>
+                                <br>
+                                <small class="text-muted">
+                                    Login - 07268051000148
+                                </small>
+                                <br>
+                                <small class="text-muted">
+                                    Nome - G J LABS INFORMATICA LTDA
+                                </small>
+                                    <br>
+
+                                    <small class="text-muted">
+                                        Inscrição Municipal - 00.307.117-0
+                                    </small>
+
+                                <div>
+                                    <br>
+                                    <span class="font-bold font-uppercase">
+                                            Último Acesso
+                                        </span>
+                                    <br>
+                                    <small class="text-muted">
+                                        02/07/2026 22:23
+                                    </small>
+                                </div>
+
+                                <div>
+                                    <br>
+<form id="j_idt76" name="j_idt76" method="post" action="/notafiscal/paginas/notafiscal/emissaoNotaFiscalData.jsf" enctype="application/x-www-form-urlencoded">
+<input type="hidden" name="j_idt76" value="j_idt76">
+<input type="hidden" name="javax.faces.ViewState" id="j_id1:javax.faces.ViewState:1" value="-1095635306594764140:196538100140560192" autocomplete="off">
+<table style="width: 100%">
+<tbody>
+<tr>
+<td><label id="j_idt76:j_idt78" class="ui-outputlabel ui-widget font-bold font-uppercase"><span class="ui-outputlabel-label">Tempo de Sessão</span></label></td>
+</tr>
+<tr>
+<td><span id="j_idt76:timerSessionApplication" title="" class="ui-timer ui-widget ui-widget-header ui-corner-all jarch-timer-sessao" style="border: unset">00:29:28</span></td>
+</tr>
+</tbody>
+</table>
+
+</form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <ul class="nav" id="side-menu">
+<form id="j_idt80" name="j_idt80" method="post" action="/notafiscal/paginas/notafiscal/emissaoNotaFiscalData.jsf" enctype="application/x-www-form-urlencoded">
+<input type="hidden" name="j_idt80" value="j_idt80">
+<input type="hidden" name="javax.faces.ViewState" id="j_id1:javax.faces.ViewState:2" value="-1095635306594764140:196538100140560192" autocomplete="off">
+
+
+    <ul class="side-menu nav">	<li id="0">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Alteração Senha'}]); redirectURL([{name:'urlMenu', value:'../login/alterarSenha.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Alteração Senha</span> 		</a> 	</li> 	<li id="15877">		<a onclick="saveMenuParent([{name:'nameMenu', value:'2° via Guia Construção Civil'}]); redirectURL([{name:'urlMenu', value:'../guia/guiaConstrucaoCivil.jsf'}]); showMessageProcess(true);">			<span class="nav-label">2° via Guia Construção Civil</span> 		</a> 	</li> 	<li id="16864">		<a onclick="saveMenuParent([{name:'nameMenu', value:'2° via Guia Profissional Autônomo'}]); redirectURL([{name:'urlMenu', value:'../guia/guiaProfissionalAutonomo.jsf'}]); showMessageProcess(true);">			<span class="nav-label">2° via Guia Profissional Autônomo</span> 		</a> 	</li> 	<li id="15871">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Abertura de Requerimentos'}]); redirectURL([{name:'urlMenu', value:'https://requerimentos.campinas.sp.gov.br/externo/login/'}]); showMessageProcess(true);">			<span class="nav-label">Abertura de Requerimentos</span> 		</a> 	</li> <li id="15817" class=""> 		<a href="#"> 			<span class="nav-label">Administrar Cadastros</span> 			<span class="fa arrow"> </span> 		</a> 		<ul class="nav nav-second-level collapse" onclick=""> 	<li id="15881">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Administrar Cadastros-&gt;Cadastro de Mapa'}]); redirectURL([{name:'urlMenu', value:'../notamaterial/notaMaterialList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Cadastro de Mapa</span> 		</a> 	</li> 	<li id="15879">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Administrar Cadastros-&gt;Cadastros de Obras'}]); redirectURL([{name:'urlMenu', value:'../obra/obraList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Cadastros de Obras</span> 		</a> 	</li> 	<li id="15851">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Administrar Cadastros-&gt;Cadastros de Tomadores/Prestadores'}]); redirectURL([{name:'urlMenu', value:'../pessoa/pessoaList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Cadastros de Tomadores/Prestadores</span> 		</a> 	</li> 		</ul> 	</li> 	<li id="16944">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Apuração ISSQN Construção Civil'}]); redirectURL([{name:'urlMenu', value:'',}]); showMessageProcess(false); " href="https://requerimentos.campinas.sp.gov.br/externo/rascunhos/novo?id=fef427b918fbae7e9f888cc774eb770e0f367513" target="_blank" ignorar=" ''}]); showMessageProcess(true);">			<span class="nav-label">Apuração ISSQN Construção Civil</span> 		</a> 	</li> 	<li id="15826">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Configuração Empresa'}]); redirectURL([{name:'urlMenu', value:'../configuracaoempresa/configuracaoEmpresaList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Configuração Empresa</span> 		</a> 	</li> 	<li id="15847">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Denúncia Espontânea'}]); redirectURL([{name:'urlMenu', value:'../denunciaespontanea/denunciaEspontaneaList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Denúncia Espontânea</span> 		</a> 	</li> <li id="16126" class=""> 		<a href="#"> 			<span class="nav-label">DOCEC</span> 			<span class="fa arrow"> </span> 		</a> 		<ul class="nav nav-second-level collapse" onclick=""> 	<li id="15828">		<a onclick="saveMenuParent([{name:'nameMenu', value:'DOCEC-&gt;Declaração'}]); redirectURL([{name:'urlMenu', value:'../declaracaocondominio/declaracaoCondominioList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Declaração</span> 		</a> 	</li> 		</ul> 	</li> <li id="15819" class=""> 		<a href="#"> 			<span class="nav-label">Gerenciar NFSe</span> 			<span class="fa arrow"> </span> 		</a> 		<ul class="nav nav-second-level collapse" onclick=""> 	<li id="15873">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Gerenciar NFSe-&gt;Consulta Nota Fiscal'}]); redirectURL([{name:'urlMenu', value:'../notafiscal/notaFiscalList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Consulta Nota Fiscal</span> 		</a> 	</li> 	<li id="15862">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Gerenciar NFSe-&gt;Exportar NFSe (XML)'}]); redirectURL([{name:'urlMenu', value:'../exportacaonota/exportacaoNota.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Exportar NFSe (XML)</span> 		</a> 	</li> 	<li id="15875">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Gerenciar NFSe-&gt;Livro Fiscal'}]); redirectURL([{name:'urlMenu', value:'../livrofiscal/relatorioLivroFiscal.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Livro Fiscal</span> 		</a> 	</li> 	<li id="15876">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Gerenciar NFSe-&gt;Nota Fiscal Talão'}]); redirectURL([{name:'urlMenu', value:'../notafiscal/notaFiscalTalaoList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Nota Fiscal Talão</span> 		</a> 	</li> 		</ul> 	</li> <li id="15815" class=""> 		<a href="#"> 			<span class="nav-label">Guia</span> 			<span class="fa arrow"> </span> 		</a> 		<ul class="nav nav-second-level collapse" onclick=""> 	<li id="15844">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Guia-&gt;Emitir Guia'}]); redirectURL([{name:'urlMenu', value:'../guia/guiaList.jsf?emitir=S'}]); showMessageProcess(true);">			<span class="nav-label">Emitir Guia</span> 		</a> 	</li> 	<li id="15816">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Guia-&gt;Gerenciar Guias'}]); redirectURL([{name:'urlMenu', value:'../guia/guiaList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Gerenciar Guias</span> 		</a> 	</li> 		</ul> 	</li> 	<li id="15854">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Lote RPS'}]); redirectURL([{name:'urlMenu', value:'../loterps/loteRpsList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Lote RPS</span> 		</a> 	</li> <li id="15824" class="active"> 		<a href="#"> 			<span class="nav-label">NFSe Prestador</span> 			<span class="fa arrow"> </span> 		</a> 		<ul class="nav nav-second-level collapse in" onclick=""> 	<li id="15839">		<a onclick="saveMenuParent([{name:'nameMenu', value:'NFSe Prestador-&gt;Emitir Nota Fiscal'}]); redirectURL([{name:'urlMenu', value:'../notafiscal/emissaoNotaFiscalList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Emitir Nota Fiscal</span> 		</a> 	</li> 	<li id="15825">		<a onclick="saveMenuParent([{name:'nameMenu', value:'NFSe Prestador-&gt;Emitir Nota Fiscal Retroativa'}]); redirectURL([{name:'urlMenu', value:'../notafiscal/emissaoNotaFiscalList.jsf?TIPO=NFR'}]); showMessageProcess(true);">			<span class="nav-label">Emitir Nota Fiscal Retroativa</span> 		</a> 	</li> 		</ul> 	</li> <li id="15845" class=""> 		<a href="#"> 			<span class="nav-label">NFSE TOMADOR (Escrituração)</span> 			<span class="fa arrow"> </span> 		</a> 		<ul class="nav nav-second-level collapse" onclick=""> 	<li id="15846">		<a onclick="saveMenuParent([{name:'nameMenu', value:'NFSE TOMADOR (Escrituração)-&gt;Emitir Nota Fiscal Tomador'}]); redirectURL([{name:'urlMenu', value:'../notafiscal/emissaoNotaFiscalList.jsf?TIPO=NFT'}]); showMessageProcess(true);">			<span class="nav-label">Emitir Nota Fiscal Tomador</span> 		</a> 	</li> 	<li id="15855">		<a onclick="saveMenuParent([{name:'nameMenu', value:'NFSE TOMADOR (Escrituração)-&gt;Importação Nota Tomador'}]); redirectURL([{name:'urlMenu', value:'../importacaotomador/importacaoTomadorList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Importação Nota Tomador</span> 		</a> 	</li> 		</ul> 	</li> 	<li id="15848">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Procuração Eletrônica'}]); redirectURL([{name:'urlMenu', value:'../procuracao/procuracaoList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Procuração Eletrônica</span> 		</a> 	</li> 	<li id="16844">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Reforma Tributária'}]); redirectURL([{name:'urlMenu', value:'',}]); showMessageProcess(false); " href="https://campinas.sp.gov.br/sites/reformatributaria" target="_blank" ignorar=" ''}]); showMessageProcess(true);">			<span class="nav-label">Reforma Tributária</span> 		</a> 	</li> <li id="16684" class=""> 		<a href="#"> 			<span class="nav-label">RELATÓRIOS ASSÍNCRONOS</span> 			<span class="fa arrow"> </span> 		</a> 		<ul class="nav nav-second-level collapse" onclick=""> 	<li id="16686">		<a onclick="saveMenuParent([{name:'nameMenu', value:'RELATÓRIOS ASSÍNCRONOS-&gt;CONSULTA RELATÓRIOS ASSÍNCRONOS'}]); redirectURL([{name:'urlMenu', value:'../agendamento/agendamentoList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">CONSULTA RELATÓRIOS ASSÍNCRONOS</span> 		</a> 	</li> 		</ul> 	</li> 	<li id="15878">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Repasse Plano de Saúde'}]); redirectURL([{name:'urlMenu', value:'../declaracaodeducao/declaracaoDeducaoList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Repasse Plano de Saúde</span> 		</a> 	</li> <li id="15852" class=""> 		<a href="#"> 			<span class="nav-label">Salão Parceiro</span> 			<span class="fa arrow"> </span> 		</a> 		<ul class="nav nav-second-level collapse" onclick=""> 	<li id="15853">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Salão Parceiro-&gt;Declaração Profissional Salão Parceiro'}]); redirectURL([{name:'urlMenu', value:'../declaracaosalaoparceiro/declaracaoSalaoParceiroList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Declaração Profissional Salão Parceiro</span> 		</a> 	</li> 	<li id="16924">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Salão Parceiro-&gt;Declaração Serviços Salão Parceiro'}]); redirectURL([{name:'urlMenu', value:'../precoservico/precoServicoList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Declaração Serviços Salão Parceiro</span> 		</a> 	</li> 		</ul> 	</li> <li id="15837" class=""> 		<a href="#"> 			<span class="nav-label">Sociedade de Profissionais</span> 			<span class="fa arrow"> </span> 		</a> 		<ul class="nav nav-second-level collapse" onclick=""> 	<li id="15838">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Sociedade de Profissionais-&gt;Declaração Profissionais Habilitados da Sociedade de Profissionais'}]); redirectURL([{name:'urlMenu', value:'../sociedadecivil/sociedadeCivilDeclaracaoList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Declaração Profissionais Habilitados da Sociedade de Profissionais</span> 		</a> 	</li> 	<li id="15865">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Sociedade de Profissionais-&gt;Gerenciar Guia de Recolhimento'}]); redirectURL([{name:'urlMenu', value:'../sociedadecivil/sociedadeCivilGuiaList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Gerenciar Guia de Recolhimento</span> 		</a> 	</li> 		</ul> 	</li> <li id="16129" class=""> 		<a href="#"> 			<span class="nav-label">Termo de Ocorrência</span> 			<span class="fa arrow"> </span> 		</a> 		<ul class="nav nav-second-level collapse" onclick=""> 	<li id="15833">		<a onclick="saveMenuParent([{name:'nameMenu', value:'Termo de Ocorrência-&gt;Termo Ocorrência'}]); redirectURL([{name:'urlMenu', value:'../termoocorrencia/termoOcorrenciaList.jsf'}]); showMessageProcess(true);">			<span class="nav-label">Termo Ocorrência</span> 		</a> 	</li> 		</ul> 	</li> 
+    </ul><script id="j_idt80:j_idt84" type="text/javascript">saveMenuParent = function() {return PrimeFaces.ab({s:"j_idt80:j_idt84",f:"j_idt80",pa:arguments[0]});}</script><script id="j_idt80:j_idt85" type="text/javascript">redirectURL = function() {return PrimeFaces.ab({s:"j_idt80:j_idt85",f:"j_idt80",pa:arguments[0]});}</script><script id="j_idt80:j_idt86" type="text/javascript">executeEL = function() {return PrimeFaces.ab({s:"j_idt80:j_idt86",f:"j_idt80",onco:function(xhr,status,args,data){hideMessageProcess();;},pa:arguments[0]});}</script><script id="j_idt80:j_idt87" type="text/javascript">executeELAndReload = function() {return PrimeFaces.ab({s:"j_idt80:j_idt87",f:"j_idt80",onco:function(xhr,status,args,data){location.reload();;},pa:arguments[0]});}</script>
+</form>
+                    </ul>
+                </div></nav><main id="wrapper" style="display: block">
+        <style type="text/css">
+            .col-lg-8, .col-lg-12, .col-lg-6, .col-lg-3, .col-lg-2, .hpanel .panel-body .row {
+                padding-left: 5px !important;
+                padding-right: 5px !important;
+            }
+
+            .row > .col-lg-12 > .hpanel {
+                padding-bottom: 0;
+                margin-bottom: 10px;
+            }
+
+            .form-emissaonf .content > .panel-footer {
+                padding-bottom: 35px;
+                margin: 0 10px;
+            }
+
+            #wrapper {
+                overflow-y: unset !important;
+            }
+
+            .ui-autocomplete > .ui-autocomplete-input {
+                width: 100%;
+            }
+
+            .dados-pessoa > .panel-body {
+                padding: 0;
+            }
+
+            .numero-nota > tbody > tr > td.ui-panelgrid-cell {
+                padding: 4px 0;
+            }
+        </style>
+
+<form id="formNotaFiscal" name="formNotaFiscal" method="post" action="/notafiscal/paginas/notafiscal/emissaoNotaFiscalData.jsf" class="form-emissaonf" enctype="application/x-www-form-urlencoded">
+<input type="hidden" name="formNotaFiscal" value="formNotaFiscal">
+
+
+    <div id="formNotaFiscal:j_idt90" class="jarch__panel-title transition animated fadeInDown">
+        <div class="title-content">
+            <h2 class="m-0">Nota Fiscal</h2>
+                <small class="m-t-xs">Emissão de Nota Fiscal</small>
+        </div>
+            <div class="dropdown help">
+                <a href="#" onclick="PF('widgetVarHelp').show()">
+                    <label id="help">
+                        <i class="fa fa-question-circle"></i>
+                        PRECISA DE AJUDA? CLIQUE AQUI
+                    </label>
+                </a>
+            </div>
+    </div>
+
+                <div class="content mt-5">
+                    
+                    <div id="app" class="row" style="padding-bottom: 0">
+                        <div class="col-lg-12">
+
+                            
+
+    <div id="conteudo_principal" class="row">
+        <div class="col-lg-12">
+            <div class="hpanel">
+                <div class="panel-heading hbuilt">
+                    <div class="panel-tools">
+                        <a class="showhide">
+                            <i class="fa fa-chevron-up"></i>
+                        </a>
+                    </div>
+                    Identificação e Clonagem
+                </div>
+                <div class="panel-body" style="padding: 20px 0 0 0">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="font-bold m-b-sm">
+                                Prestador de Serviço
+                            </div>
+                            <div class="hpanel stats">
+                                <div class="panel-body">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <h4>
+                                                CPF/CNPJ:
+                                                <strong>
+                                                    07268051000148
+                                                </strong>
+                                            </h4>
+                                        </div>
+                                        <div class="col-md-8">
+                                            <h4 class="text-primary text-uppercase">
+                                                <strong>
+                                                    G J LABS INFORMATICA LTDA
+                                                </strong>
+                                            </h4>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-4 pull-left" style="padding-left: 0">
+                                    <p class="text-uppercase">
+                                        Pesquisar
+                                    </p><div id="formNotaFiscal:j_idt100" class="ui-panelgrid ui-widget numero-nota" style="width: 100%; padding: 4px 0"><div id="formNotaFiscal:j_idt100_content" class="ui-panelgrid-content ui-widget-content ui-grid ui-grid-responsive"><div class="ui-g"><div class="ui-panelgrid-cell ui-g-12 ui-md-6"><input id="formNotaFiscal:j_idt101" name="formNotaFiscal:j_idt101" type="text" value="2865" class="ui-inputfield ui-inputtext ui-widget ui-state-default ui-corner-all form-control input-sm ui-state-filled" placeholder="Número da Nota" onchange="PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt101&quot;,e:&quot;change&quot;,f:&quot;formNotaFiscal&quot;,p:&quot;formNotaFiscal:j_idt101&quot;});" data-p-con="javax.faces.Long"></div><div class="ui-panelgrid-cell ui-g-12 ui-md-6"><a id="formNotaFiscal:j_idt102" href="#" class="ui-commandlink ui-widget btn btn-sm btn-success" onclick="showMessageProcess(false);;PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt102&quot;,f:&quot;formNotaFiscal&quot;,p:&quot;formNotaFiscal:j_idt102&quot;,u:&quot;formNotaFiscal&quot;,onco:function(xhr,status,args,data){hideMessageProcess();;}});return false;">
+                                                    <span class="fa fa-copy"></span>
+                                                    Clonar
+                                                </a></div></div></div></div>
+
+                                </div>
+
+                                <div class="col-md-8" style="padding-right: 0">
+                                    <p class="text-uppercase">
+                                        Última Nota Emitida
+                                    </p>
+                                    <div class="table-responsive">
+                                        <table class="table table-hover table-bordered table-striped">
+                                            <tbody>
+                                                <tr>
+                                                    <td class="issue-info">
+                                                        <a href="#">
+                                                            Nº da Nota
+                                                        </a>
+                                                        <br>
+                                                        <small>
+                                                            2995
+                                                        </small>
+                                                    </td>
+                                                    <td class="issue-info">
+                                                        <a href="#">
+                                                            Tomador
+                                                        </a>
+                                                        <br>
+                                                        <small>
+                                                            ELITE TELECOMUNICAÇÕES E INFORMATICA LTDA
+                                                        </small>
+                                                    </td>
+                                                    <td class="issue-info">
+                                                        <a href="#">
+                                                            Valor
+                                                        </a>
+                                                        <br>
+                                                        <small>400,17
+                                                        </small>
+                                                    </td>
+                                                    <td class="issue-info"><a id="formNotaFiscal:idCommandLinkClonarEsta" href="#" class="ui-commandlink ui-widget btn btn-success btn-sm btn-block" onclick="showMessageProcess(false);;PrimeFaces.ab({s:&quot;formNotaFiscal:idCommandLinkClonarEsta&quot;,f:&quot;formNotaFiscal&quot;,p:&quot;formNotaFiscal:idCommandLinkClonarEsta&quot;,u:&quot;formNotaFiscal&quot;,onco:function(xhr,status,args,data){hideMessageProcess();;}});return false;">
+
+                                                            <span class="fa fa-copy"></span>
+                                                            Clonar Esta
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+                            
+<span id="formNotaFiscal:panelNotaFiscalPessoa">
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="hpanel">
+            <div class="panel-heading hbuilt">
+                <div class="panel-tools">
+                    <a class="showhide">
+                        <i class="fa fa-chevron-up"></i>
+                    </a>
+                </div>
+
+                Tomador
+            </div><span id="formNotaFiscal:notaFiscalPessoa" class="dados-pessoa">
+                <div class="panel-body" style="padding: 10px 0 0 0">
+                    <div class="row">
+                        <div class="col-lg-12">
+
+
+
+                            <div class="row">
+                                <div id="selecaoPessoa"><div id="formNotaFiscal:j_idt141" role="radiogroup" class="layout-line-direction ui-grid ui-grid-responsive ui-selectoneradio ui-widget" aria-required="true"><div class="" role="radio" aria-checked="false"><div class="ui-radiobutton ui-widget"><div class="ui-helper-hidden-accessible"><input id="formNotaFiscal:j_idt141:0" name="formNotaFiscal:j_idt141" type="radio" value="NI" onchange="PrimeFaces.bcn(this,event,[function(event){PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt141&quot;,e:&quot;change&quot;,f:&quot;formNotaFiscal&quot;,p:&quot;formNotaFiscal:j_idt141&quot;,u:&quot;@(.dados-pessoa),@(.panel-atividade),@(.panel-motivo-nao-retencao),@(.panel-tipo-pessoa),formNotaFiscal:panelNotaFiscalIntermediario&quot;});},function(event){PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt141&quot;,e:&quot;change&quot;,f:&quot;formNotaFiscal&quot;,p:&quot;formNotaFiscal:j_idt141&quot;,u:&quot;@(.dados-pessoa),@(.panel-atividade),@(.panel-motivo-nao-retencao),@(.panel-tipo-pessoa)&quot;});},function(event){PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt141&quot;,e:&quot;change&quot;,f:&quot;formNotaFiscal&quot;,p:&quot;formNotaFiscal:j_idt141&quot;,u:&quot;formNotaFiscal:panelObra,@(.panel-local-prestacao),@(.panel-local-resultado-prestacao),@(.dados-local-prestacao),@(.dados-regra-tributacao),@(.panel-atividade),@(.dados-deducao),@(.panel-calculo),@(.panel-tipo-pessoa)&quot;});}])" data-p-required="true" data-p-hl="oneradio" data-p-grouped="true"></div><div class="ui-radiobutton-box ui-widget ui-corner-all ui-state-default"><span class="ui-radiobutton-icon ui-icon ui-icon-blank ui-c"></span></div></div><label for="formNotaFiscal:j_idt141:0">Não Identificado</label></div><div class="" role="radio" aria-checked="true"><div class="ui-radiobutton ui-widget"><div class="ui-helper-hidden-accessible"><input id="formNotaFiscal:j_idt141:1" name="formNotaFiscal:j_idt141" type="radio" value="NA" onchange="PrimeFaces.bcn(this,event,[function(event){PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt141&quot;,e:&quot;change&quot;,f:&quot;formNotaFiscal&quot;,p:&quot;formNotaFiscal:j_idt141&quot;,u:&quot;@(.dados-pessoa),@(.panel-atividade),@(.panel-motivo-nao-retencao),@(.panel-tipo-pessoa),formNotaFiscal:panelNotaFiscalIntermediario&quot;});},function(event){PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt141&quot;,e:&quot;change&quot;,f:&quot;formNotaFiscal&quot;,p:&quot;formNotaFiscal:j_idt141&quot;,u:&quot;@(.dados-pessoa),@(.panel-atividade),@(.panel-motivo-nao-retencao),@(.panel-tipo-pessoa)&quot;});},function(event){PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt141&quot;,e:&quot;change&quot;,f:&quot;formNotaFiscal&quot;,p:&quot;formNotaFiscal:j_idt141&quot;,u:&quot;formNotaFiscal:panelObra,@(.panel-local-prestacao),@(.panel-local-resultado-prestacao),@(.dados-local-prestacao),@(.dados-regra-tributacao),@(.panel-atividade),@(.dados-deducao),@(.panel-calculo),@(.panel-tipo-pessoa)&quot;});}])" checked="checked" data-p-required="true" data-p-hl="oneradio" data-p-grouped="true"></div><div class="ui-radiobutton-box ui-widget ui-corner-all ui-state-default ui-state-active"><span class="ui-radiobutton-icon ui-icon ui-icon-bullet ui-c"></span></div></div><label for="formNotaFiscal:j_idt141:1">Nacional</label></div><div class="" role="radio" aria-checked="false"><div class="ui-radiobutton ui-widget"><div class="ui-helper-hidden-accessible"><input id="formNotaFiscal:j_idt141:2" name="formNotaFiscal:j_idt141" type="radio" value="EX" onchange="PrimeFaces.bcn(this,event,[function(event){PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt141&quot;,e:&quot;change&quot;,f:&quot;formNotaFiscal&quot;,p:&quot;formNotaFiscal:j_idt141&quot;,u:&quot;@(.dados-pessoa),@(.panel-atividade),@(.panel-motivo-nao-retencao),@(.panel-tipo-pessoa),formNotaFiscal:panelNotaFiscalIntermediario&quot;});},function(event){PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt141&quot;,e:&quot;change&quot;,f:&quot;formNotaFiscal&quot;,p:&quot;formNotaFiscal:j_idt141&quot;,u:&quot;@(.dados-pessoa),@(.panel-atividade),@(.panel-motivo-nao-retencao),@(.panel-tipo-pessoa)&quot;});},function(event){PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt141&quot;,e:&quot;change&quot;,f:&quot;formNotaFiscal&quot;,p:&quot;formNotaFiscal:j_idt141&quot;,u:&quot;formNotaFiscal:panelObra,@(.panel-local-prestacao),@(.panel-local-resultado-prestacao),@(.dados-local-prestacao),@(.dados-regra-tributacao),@(.panel-atividade),@(.dados-deducao),@(.panel-calculo),@(.panel-tipo-pessoa)&quot;});}])" data-p-required="true" data-p-hl="oneradio" data-p-grouped="true"></div><div class="ui-radiobutton-box ui-widget ui-corner-all ui-state-default"><span class="ui-radiobutton-icon ui-icon ui-icon-blank ui-c"></span></div></div><label for="formNotaFiscal:j_idt141:2">Exterior</label></div></div>
+                                </div>
+                            </div><span class="dados-pessoa"><hr id="formNotaFiscal:j_idt146" class="ui-separator ui-state-default ui-corner-all">
+                                <div class="row">
+                                    <div class="form-group col-lg-12">
+                                        <div class="col-lg-2" style="padding-left: 0px;">
+                                            <label>
+                                                CPF/CNPJ
+                                            </label>
+                                            <br>
+                                            <div class="input-group">
+    <div id="formNotaFiscal:idCpfCnpjPessoanotaFiscalPessoa:idInputMaskCpfCnpj" class="jarch-inputtext" style="width: 100%"><input id="formNotaFiscal:idCpfCnpjPessoanotaFiscalPessoa:idInputMaskCpfCnpj:inputText" name="formNotaFiscal:idCpfCnpjPessoanotaFiscalPessoa:idInputMaskCpfCnpj:inputText" type="text" value="" style="width: 100%" class="ui-inputfield ui-inputtext ui-widget ui-state-default ui-corner-all input-cpf-cnpj" maxlength="18" placeholder="" size="0" onkeypress="formatCpfCnpjAlfanumerico(this, cpfCnpjAlfanumerico)" onkeyup="formatCpfCnpjAlfanumerico(this, cpfCnpjAlfanumerico)" onblur="ajustaTamanhoCpfCnpjAlfanumerico(this, tamanhoCpfCnpjAlfanumerico)" data-p-label="" data-p-rmsg="" data-p-vmsg="CPF/CNPJ inválido" data-p-cmsg="Conversão CPF/CNPJ inválido">
+    </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-4" style="padding-left: 0px;">
+                                            <label>
+                                                Nome/Nome Empresarial
+                                            </label>
+                                            <br><input id="formNotaFiscal:idNomePessoanotaFiscalPessoa" name="formNotaFiscal:idNomePessoanotaFiscalPessoa" type="text" style="width: 100%" class="ui-inputfield ui-inputtext ui-widget ui-state-default ui-corner-all input-description-medium" data-p-label="">
+                                        </div><div style="padding-left: 0px;" class="col-lg-2"><label id="formNotaFiscal:j_idt153:j_idt155" class="ui-outputlabel ui-widget" for="formNotaFiscal:j_idt153:idInputMaskIm"><span class="ui-outputlabel-label">Inscrição Municipal</span></label><input id="formNotaFiscal:j_idt153:idInputMaskIm" name="formNotaFiscal:j_idt153:idInputMaskIm" type="text" value="" disabled="disabled" onchange="PrimeFaces.bcn(this,event,[function(event){},function(event){PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt153:idInputMaskIm&quot;,e:&quot;valueChange&quot;,f:&quot;formNotaFiscal&quot;,p:&quot;formNotaFiscal:j_idt153:idInputMaskIm&quot;,u:&quot;formNotaFiscal:j_idt153:idInputMaskIm&quot;});}])" style="width: 100%" class="ui-inputfield ui-inputmask ui-widget ui-state-default ui-corner-all ui-state-disabled input-im" data-p-label="Inscrição Municipal"></div>
+                                        <div class="col-lg-1" style="padding: 0; margin-top: 20px;"><a id="formNotaFiscal:j_idt157" href="#" class="ui-commandlink ui-widget btn btn-success btn-sm" onclick="showMessageProcess(true);PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt157&quot;,e:&quot;click&quot;,f:&quot;formNotaFiscal&quot;,p:&quot;formNotaFiscal:j_idt157&quot;,u:&quot;@(.panel-popup-pessoa)&quot;});;PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt157&quot;,f:&quot;formNotaFiscal&quot;,p:&quot;@(.dados-pessoa),@(.panel-popup-pessoa)&quot;,u:&quot;@(.dados-pessoa),@(.panel-popup-pessoa),@(.dialog-visualiza-pdf),@(.base-messageheader),formNotaFiscal:notaFiscalPessoa,@(.panel-atividade),@(.panel-calculo),formNotaFiscal:panelObra,@(.panel-local-prestacao),@(.panel-local-resultado-prestacao),@(.dados-local-prestacao),@(.dados-regra-tributacao),@(.panel-atividade),@(.dados-deducao),@(.calculo-nota-fiscal),@(.panel-motivo-nao-retencao)&quot;,oner:function(xhr,status,error){hideMessageProcess();},onco:function(xhr,status,args,data){hideMessageProcess();}});return false;" style="width: 100%">
+
+                                                <i class="pe-7s-search"></i>
+                                                Pesquisar
+                                            </a>
+                                        </div>
+
+                                        <div class="col-lg-3">
+                                                <label>
+                                                    Apelido
+                                                </label>
+                                                <br><span id="formNotaFiscal:ddnotaFiscalPessoa" class="ui-autocomplete ui-autocomplete-dd ui-inputwrapper-filled" style="width: 100%"><input id="formNotaFiscal:ddnotaFiscalPessoa_input" name="formNotaFiscal:ddnotaFiscalPessoa_input" type="text" class="ui-autocomplete-input ui-autocomplete-dd-input ui-inputfield ui-widget ui-state-default ui-corner-left ui-state-filled" autocomplete="off" role="combobox" aria-controls="formNotaFiscal:ddnotaFiscalPessoa_panel" aria-expanded="false" aria-haspopup="listbox" placeholder="Buscar" value="Notre Dame 2" aria-autocomplete="list"><input id="formNotaFiscal:ddnotaFiscalPessoa_hinput" name="formNotaFiscal:ddnotaFiscalPessoa_hinput" type="hidden" autocomplete="off" value="1581172"><button id="formNotaFiscal:ddnotaFiscalPessoa_button" class="ui-autocomplete-dropdown ui-button ui-widget ui-state-default ui-corner-right ui-button-icon-only" type="button" aria-label="Choose"><span class="ui-button-icon-primary ui-icon ui-icon-triangle-1-s"></span><span class="ui-button-text">&nbsp;</span></button><span role="status" aria-live="polite" class="ui-autocomplete-status ui-helper-hidden-accessible"></span></span>
+                                        </div>
+                                    </div>
+                                </div></span><div class="dados-pessoa dados-endereco">
+
+                                <h3 class="text-success" style="padding-left: 10px">
+                                    Dados Cadastrais
+                                </h3><hr id="formNotaFiscal:j_idt175" class="ui-separator ui-state-default ui-corner-all">
+
+                                <div class="row">
+                                    <div class="form-group col-lg-12"><label id="formNotaFiscal:j_idt177" class="ui-outputlabel ui-widget" for="formNotaFiscal:idPessoaNacionalNomenotaFiscalPessoa"><span class="ui-outputlabel-label">Nome/Nome Empresarial</span></label>
+                                        <br><input id="formNotaFiscal:idPessoaNacionalNomenotaFiscalPessoa" name="formNotaFiscal:idPessoaNacionalNomenotaFiscalPessoa" type="text" value="CONGREGACAO DE SANTA CRUZ" class="ui-inputfield ui-inputtext ui-widget ui-state-default ui-corner-all ui-state-disabled form-control input-sm ui-state-filled" disabled="disabled" onchange="PrimeFaces.ab({s:&quot;formNotaFiscal:idPessoaNacionalNomenotaFiscalPessoa&quot;,e:&quot;change&quot;,f:&quot;formNotaFiscal&quot;,p:&quot;formNotaFiscal:idPessoaNacionalNomenotaFiscalPessoa&quot;});" data-p-label="Nome/Nome Empresarial">
+                                    </div>
+                                    <div class="form-group col-lg-8"><label id="formNotaFiscal:j_idt180" class="ui-outputlabel ui-widget" for="formNotaFiscal:idPessoaNacionalApelidonotaFiscalPessoa"><span class="ui-outputlabel-label">Apelido</span></label>
+                                        <br><input id="formNotaFiscal:idPessoaNacionalApelidonotaFiscalPessoa" name="formNotaFiscal:idPessoaNacionalApelidonotaFiscalPessoa" type="text" value="Notre Dame 2" class="ui-inputfield ui-inputtext ui-widget ui-state-default ui-corner-all form-control input-sm ui-state-filled" onchange="PrimeFaces.ab({s:&quot;formNotaFiscal:idPessoaNacionalApelidonotaFiscalPessoa&quot;,e:&quot;change&quot;,f:&quot;formNotaFiscal&quot;,p:&quot;formNotaFiscal:idPessoaNacionalApelidonotaFiscalPessoa&quot;});" data-p-label="Apelido">
+                                    </div>
+                                    <div class="form-group col-lg-2">
+    <div id="formNotaFiscal:idPessoaNacionalCpfCnpjnotaFiscalPessoa:idInputMaskCpfCnpj" class="jarch-inputtext"><label id="formNotaFiscal:idPessoaNacionalCpfCnpjnotaFiscalPessoa:idInputMaskCpfCnpj:label" class="ui-outputlabel ui-widget" for="formNotaFiscal:idPessoaNacionalCpfCnpjnotaFiscalPessoa:idInputMaskCpfCnpj:inputText"><span class="ui-outputlabel-label">CPF/CNPJ *</span></label>
+                <br><input id="formNotaFiscal:idPessoaNacionalCpfCnpjnotaFiscalPessoa:idInputMaskCpfCnpj:inputText" name="formNotaFiscal:idPessoaNacionalCpfCnpjnotaFiscalPessoa:idInputMaskCpfCnpj:inputText" type="text" value="60993193000150" style="width:140px; " class="ui-inputfield ui-inputtext ui-widget ui-state-default ui-corner-all ui-state-disabled input-cpf-cnpj form-control input-sm ui-state-filled" disabled="disabled" maxlength="18" placeholder="" size="0" onkeypress="formatCpfCnpjAlfanumerico(this, cpfCnpjAlfanumerico)" onkeyup="formatCpfCnpjAlfanumerico(this, cpfCnpjAlfanumerico)" onchange="PrimeFaces.bcn(this,event,[function(event){},function(event){PrimeFaces.ab({s:&quot;formNotaFiscal:idPessoaNacionalCpfCnpjnotaFiscalPessoa:idInputMaskCpfCnpj:inputText&quot;,e:&quot;change&quot;,f:&quot;formNotaFiscal&quot;,p:&quot;formNotaFiscal:idPessoaNacionalCpfCnpjnotaFiscalPessoa:idInputMaskCpfCnpj:inputText&quot;});}])" onblur="ajustaTamanhoCpfCnpjAlfanumerico(this, tamanhoCpfCnpjAlfanumerico)" data-p-label="CPF/CNPJ *" data-p-rmsg="CPF/CNPJ *: É de preenchimento obrigatório. Por favor fornecer esta informação" data-p-vmsg="CPF/CNPJ inválido" data-p-cmsg="Conversão CPF/CNPJ inválido">
+    </div>
+                                    </div>
+                                    <div class="form-group col-lg-2"><span class="dados-inscricao ui-inputwrapper-filled"><label id="formNotaFiscal:j_idt188:j_idt190" class="ui-outputlabel ui-widget" for="formNotaFiscal:j_idt153:idInputMaskIm"><span class="ui-outputlabel-label">Inscrição Municipal</span></label><input id="formNotaFiscal:j_idt188:idInputMaskIm" name="formNotaFiscal:j_idt188:idInputMaskIm" type="text" value="00.384.996-1" disabled="disabled" onchange="PrimeFaces.bcn(this,event,[function(event){},function(event){PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt188:idInputMaskIm&quot;,e:&quot;valueChange&quot;,f:&quot;formNotaFiscal&quot;,p:&quot;formNotaFiscal:j_idt188:idInputMaskIm&quot;,u:&quot;formNotaFiscal:j_idt188:idInputMaskIm&quot;});}])" style="width: 100%" class="ui-inputfield ui-inputmask ui-widget ui-state-default ui-corner-all ui-state-disabled input-im form-control input-sm ui-state-filled" data-p-label="Inscrição Municipal"></span>
+                                    </div>
+                                </div><div id="formNotaFiscal:idDadosEndereco1notaFiscalPessoa" class="row dados-endereco">
+                                    <div class="form-group col-lg-3"><table>
+<tbody>
+<tr>
+<td><label id="formNotaFiscal:j_idt194:idInputMask:j_idt196" class="ui-outputlabel ui-widget"><span class="ui-outputlabel-label">CEP</span></label>
+                <br><input id="formNotaFiscal:j_idt194:idInputMask:idInputMask" name="formNotaFiscal:j_idt194:idInputMask:idInputMask" type="text" value="13092621" disabled="disabled" placeholder="" onchange="PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt194:idInputMask:idInputMask&quot;,e:&quot;change&quot;,f:&quot;formNotaFiscal&quot;,p:&quot;formNotaFiscal:j_idt194:idInputMask:idInputMask&quot;,u:&quot;@(.dados-endereco),@(.base-messageheader),@(.dados-pessoa),@(.dados-inscricao)&quot;,onst:function(cfg){showMessageProcess(true);},onco:function(xhr,status,args,data){hideMessageProcess();}});" style="width:80px; " class="ui-inputfield ui-inputmask ui-widget ui-state-default ui-corner-all ui-state-disabled ui-state-filled" data-p-label="CEP" data-p-rmsg="CEP: É de preenchimento obrigatório. Por favor fornecer esta informação" data-p-vmsg="???message.cepInvalido???" data-p-cmsg="???message.conversaoCepInvalido???"></td>
+<td>
+                                                <br>
+    <style>
+        .jarch__lookup .lookup__panel tbody tr td:last-child {
+            width: 100%
+        }
+
+        .ui-panelgrid .ui-panelgrid-cell .jarch__lookup {
+            margin-top: -4px !important;
+        }
+    </style>
+
+    <div id="formNotaFiscal:j_idt200" style="visibility: visible; width: 100%;" class=" jarch__lookup"><table id="formNotaFiscal:j_idt200:panelLookup_j_idt200" class="lookup__panel lookup__panel-j_idt200" style="margin: 10x !important;">
+<tbody>
+<tr>
+<td><input id="formNotaFiscal:j_idt200:inputHiddenLookup" type="hidden" name="formNotaFiscal:j_idt200:inputHiddenLookup" value="Egberto Ferreira de Arruda Camargo"></td>
+<td><input id="formNotaFiscal:j_idt200:codeLookup" name="formNotaFiscal:j_idt200:codeLookup" type="text"><!--?xml version='1.0' encoding='UTF-8'?-->
+<partial-response></partial-response></td></tr></tbody></table></div></td></tr></tbody></table></div></div></div></div></div></div></span></div></div></div></span></div></div></div></form><script id="formNotaFiscal:j_idt2376" type="text/javascript">visualizaPreEmissaNotaFiscalPdf = function() {return PrimeFaces.ab({s:"formNotaFiscal:j_idt2376",f:"formNotaFiscal",u:"formDialog",onco:function(xhr,status,args,data){PF('widgetVarPreEmissaoNotaFiscal').show();;},pa:arguments[0]});}</script><script id="formNotaFiscal:j_idt2377" type="text/javascript">visualizaEmissaNotaFiscalPdf = function() {return PrimeFaces.ab({s:"formNotaFiscal:j_idt2377",f:"formNotaFiscal",u:"formDialog,formDialog:mediaEmissaoNotaFiscal",onco:function(xhr,status,args,data){hideMessageProcess(); PF('widgetVarEmissaoNotaFiscal').show();;},pa:arguments[0]});}</script><script id="formNotaFiscal:j_idt2378" type="text/javascript">exibeConfirmacaoEmissaoNota = function() {return PrimeFaces.ab({s:"formNotaFiscal:j_idt2378",f:"formNotaFiscal",u:"formDialog,formDialog:panelMensagemConfirmacao",onco:function(xhr,status,args,data){hideMessageProcess(); PF('widgetVarConfirmacao').show();;},pa:arguments[0]});}</script><script id="formNotaFiscal:j_idt2379" type="text/javascript">exibeConfirmacaoGuia = function() {return PrimeFaces.ab({s:"formNotaFiscal:j_idt2379",f:"formNotaFiscal",u:"formDialog,formDialog:panelMensagemConfirmacaoGuia",onco:function(xhr,status,args,data){hideMessageProcess(); PF('widgetVarConfirmacaoGuia').show();;},pa:arguments[0]});}</script><script id="formNotaFiscal:j_idt2380" type="text/javascript">visualizaEmissaoGuiaPdf = function() {return PrimeFaces.ab({s:"formNotaFiscal:j_idt2380",f:"formNotaFiscal",u:"formDialog",onco:function(xhr,status,args,data){hideMessageProcess(); PF('widgetVarEmissaoGuia').show();;},pa:arguments[0]});}</script><script id="formNotaFiscal:j_idt2381" type="text/javascript">exibeMensagemGuia = function() {return PrimeFaces.ab({s:"formNotaFiscal:j_idt2381",f:"formNotaFiscal",u:"formDialog",onco:function(xhr,status,args,data){hideMessageProcess(); PF('widgetVarMensagemGuiaEmitida').show();;},pa:arguments[0]});}</script>
+
+<form id="formDialog" name="formDialog" method="post" action="/notafiscal/paginas/notafiscal/emissaoNotaFiscalData.jsf" enctype="application/x-www-form-urlencoded">
+<input type="hidden" name="formDialog" value="formDialog">
+<input type="hidden" name="javax.faces.ViewState" id="j_id1:javax.faces.ViewState:8" value="-1095635306594764140:196538100140560192" autocomplete="off">
+
+    <div id="formDialog:j_idt2383"><div id="formDialog:j_idt2383:j_idt2385" class="ui-dialog ui-widget ui-widget-content ui-corner-all ui-shadow ui-hidden-container ui-draggable" style="display: none; width: 90vw; height: auto;" role="dialog" aria-describedby="formDialog:j_idt2383:j_idt2385_content" aria-hidden="true" aria-modal="true"><div class="ui-dialog-content ui-widget-content" id="formDialog:j_idt2383:j_idt2385_content" style="height: 90vh;"><iframe id="formDialog:j_idt2383:mediaPdf" title="arquivo" width="100%" height="92%" allowfullscreen="" webkitallowfullscreen="" src="/notafiscal/javax.faces.resource/documentviewer/pdfviewer.html.jsf?ln=primefaces-extensions&amp;v=14.0.0&amp;e=14.0.0&amp;file=%2Fnotafiscal%2Fjavax.faces.resource%2Fdynamiccontent.properties.jsf%3Fln%3Dprimefaces%26v%3D14.0.0%26e%3D14.0.0%26pfdrid%3D95272059e6921b36832a4a390da8ff1c%26pfdrt%3Dsc%26width%3Dtofit%26height%3Dtofit%26pfdrid_c%3Dfalse%26uid%3Dc3cb95fa-ab26-4ac1-aae1-aa6ef56d31e7%26download%3Dnull#locale=pt-BR"></iframe><div id="formDialog:j_idt2383:panelFooter" class="panel-footer flex justify-content-center flex-wrap"><a id="formDialog:j_idt2383:j_idt2388:j_idt2390" href="#" class="ui-commandlink ui-widget btn jarch-btn-return btn-sm flex align-items-center justify-content-center" onclick="PF('widgetVarPreEmissaoNotaFiscal').hide();;PrimeFaces.ab({s:&quot;formDialog:j_idt2383:j_idt2388:j_idt2390&quot;,f:&quot;formDialog&quot;,p:&quot;formDialog:j_idt2383:j_idt2388:j_idt2390&quot;,u:&quot;formDialog:j_idt2383:j_idt2388:j_idt2390&quot;,onco:function(xhr,status,args,data){;}});return false;" style="min-width: 100px">
+        
+        <i class="fa fa-reply"></i> Voltar
+    </a></div></div></div>
+    </div><div id="formDialog:j_idt2393" class="ui-dialog ui-widget ui-widget-content ui-corner-all ui-shadow ui-hidden-container dialog-visualiza-pdf ui-draggable" style="display: none; width: 90vw; height: auto;" role="dialog" aria-describedby="formDialog:j_idt2393_content" aria-hidden="true" aria-modal="true" aria-labelledby="formDialog:j_idt2393_title"><div class="ui-dialog-titlebar ui-widget-header ui-helper-clearfix ui-corner-top ui-draggable-handle"><span id="formDialog:j_idt2393_title" class="ui-dialog-title">Visualização Nota Fiscal</span></div><div class="ui-dialog-content ui-widget-content" id="formDialog:j_idt2393_content" style="height: 90vh;"><svg xmlns="http://www.w3.org/2000/svg" id="formDialog:j_idt2396" width="1" height="10px"></svg><iframe id="formDialog:mediaEmissaoNotaFiscal" title="Document Viewer" width="100%" height="62%" allowfullscreen="" webkitallowfullscreen="" src="/notafiscal/javax.faces.resource/documentviewer/pdfviewer.html.jsf?ln=primefaces-extensions&amp;v=14.0.0&amp;e=14.0.0&amp;file=%2Fnotafiscal%2Fjavax.faces.resource%2Fdynamiccontent.properties.jsf%3Fln%3Dprimefaces%26v%3D14.0.0%26e%3D14.0.0%26pfdrid%3D95272059e6921b36832a4a390da8ff1c%26pfdrt%3Dsc%26width%3Dtofit%26height%3Dtofit%26pfdrid_c%3Dfalse%26uid%3D4dac4585-f753-4e9d-900c-0e052280abd2%26download%3Dnull#locale=pt-BR"></iframe>
+
+    <div class="modal-body" style="padding: 1px 30px;">
+        <div class="row">
+            <div class="form-group col-lg-12">
+                <label>Nota enviada para o(s) destinatário(s):</label>
+                <ul>
+                </ul>
+            </div>
+        </div>
+
+        <div class="row">
+            <h3>Enviar por E-mail</h3>
+            <div class="form-group col-lg-12">
+                <label>Destinatário(s)</label><input id="formDialog:j_idt2400" name="formDialog:j_idt2400" type="text" class="ui-inputfield ui-inputtext ui-widget ui-state-default ui-corner-all form-control" placeholder="Para mais destinatários, utilize ; (ponto e vírgula) para separar os endereços" onchange="PrimeFaces.ab({s:&quot;formDialog:j_idt2400&quot;,e:&quot;change&quot;,f:&quot;formDialog&quot;,p:&quot;formDialog:j_idt2400&quot;});">
+            </div>
+        </div>
+    </div><hr id="formDialog:j_idt2402" class="ui-separator ui-state-default ui-corner-all"><div id="formDialog:j_idt2403" class="ui-panelgrid ui-widget" style="width:100%; text-align:right"><div id="formDialog:j_idt2403_content" class="ui-panelgrid-content ui-widget-content ui-grid ui-grid-responsive"><div class="ui-g"><div class="ui-panelgrid-cell ui-g-12 ui-md-12"><a id="formDialog:idCommandLinkFecharVisualizacao:j_idt2406" href="#" class="ui-commandlink ui-widget btn jarch-btn-return btn-sm mr-3" onclick="PF('widgetVarEmissaoNotaFiscal').hide();;PrimeFaces.ab({s:&quot;formDialog:idCommandLinkFecharVisualizacao:j_idt2406&quot;,f:&quot;formDialog&quot;,p:&quot;formDialog:idCommandLinkFecharVisualizacao:j_idt2406&quot;,u:&quot;formDialog:idCommandLinkFecharVisualizacao:j_idt2406&quot;,onco:function(xhr,status,args,data){;}});return false;" style="min-width: 100px">
+        
+        <i class="fa fa-reply"></i> Voltar
+    </a><a id="formDialog:j_idt2408:j_idt2410" href="#" class="ui-commandlink ui-widget btn jarch-btn-search btn-sm " onclick=";PrimeFaces.ab({s:&quot;formDialog:j_idt2408:j_idt2410&quot;,f:&quot;formDialog&quot;,p:&quot;formDialog:j_idt2408:j_idt2410&quot;,u:&quot;formDialog:j_idt2408:j_idt2410&quot;,onco:function(xhr,status,args,data){;}});return false;" style="float:center; min-width:100px;">
+        <i class="fa fa-search"></i>
+        Enviar E-Mail
+    </a></div></div></div></div></div></div><div id="formDialog:j_idt2412" class="ui-dialog ui-widget ui-widget-content ui-corner-all ui-shadow ui-hidden-container ui-draggable" style="display: none; width: 600px; height: auto;" role="dialog" aria-describedby="formDialog:j_idt2412_content" aria-hidden="true" aria-modal="true" aria-labelledby="formDialog:j_idt2412_title"><div class="ui-dialog-titlebar ui-widget-header ui-helper-clearfix ui-corner-top ui-draggable-handle"><span id="formDialog:j_idt2412_title" class="ui-dialog-title">Confirmação</span></div><div class="ui-dialog-content ui-widget-content" id="formDialog:j_idt2412_content" style="height: auto;"><div id="formDialog:panelMensagemConfirmacao" class="ui-panelgrid ui-widget"><div id="formDialog:panelMensagemConfirmacao_content" class="ui-panelgrid-content ui-widget-content ui-grid ui-grid-responsive"><div class="ui-g"><div class="ui-panelgrid-cell p-3 ui-g-12 ui-md-12">
+        <h4>
+            
+        </h4></div></div></div></div>
+
+    <div class="panel-footer" style="padding: 5px">
+        <table class="ui-panelgrid ui-widget" style="width: 100%;">
+            <tbody>
+            <tr>
+                <td style="text-align:center"><a id="formDialog:j_idt2415:j_idt2417" href="#" class="ui-commandlink ui-widget btn jarch-btn-cancel btn-sm " onclick="PF('widgetVarConfirmacao').hide();PrimeFaces.ab({s:&quot;formDialog:j_idt2415:j_idt2417&quot;,f:&quot;formDialog&quot;,p:&quot;formDialog:j_idt2415:j_idt2417&quot;,u:&quot;formDialog:j_idt2415:j_idt2417&quot;,onco:function(xhr,status,args,data){;}});return false;" tabindex="" style="float:center; min-width:100px;" target="">
+        <i class="fa fa-ban"></i>
+        Cancelar
+    </a>
+                </td>
+                <td style="text-align:center"><a id="formDialog:idCommandLinkConfirmacao:commandLink" href="#" class="ui-commandlink ui-widget btn jarch-btn-save btn-sm " onclick="PF('widgetVarConfirmacao').hide(); showMessageProcess(false);;PrimeFaces.ab({s:&quot;formDialog:idCommandLinkConfirmacao:commandLink&quot;,f:&quot;formDialog&quot;,p:&quot;formDialog:idCommandLinkConfirmacao:commandLink&quot;,u:&quot;@(.messageheader)&quot;,onst:function(cfg){;},oner:function(xhr,status,error){;},onco:function(xhr,status,args,data){hideMessageProcess();;}});return false;" style="min-width:100px;">
+        <i class="fa fa-check"></i> Gravar
+        </a>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div></div></div><div id="formDialog:j_idt2423" class="ui-dialog ui-widget ui-widget-content ui-corner-all ui-shadow ui-hidden-container dialog-visualiza-pdf ui-draggable" style="display: none; width: 90vw; height: auto;" role="dialog" aria-describedby="formDialog:j_idt2423_content" aria-hidden="true" aria-labelledby="formDialog:j_idt2423_title"><div class="ui-dialog-titlebar ui-widget-header ui-helper-clearfix ui-corner-top ui-draggable-handle"><span id="formDialog:j_idt2423_title" class="ui-dialog-title"></span><a href="#" class="ui-dialog-titlebar-icon ui-dialog-titlebar-close ui-corner-all" aria-label="Close" role="button"><span class="ui-icon ui-icon-closethick"></span></a></div><div class="ui-dialog-content ui-widget-content" id="formDialog:j_idt2423_content" style="height: 90vh;"><object type="application/pdf" data="/notafiscal/javax.faces.resource/dynamiccontent.properties.jsf?ln=primefaces&amp;v=14.0.0&amp;e=14.0.0&amp;pfdrid=8c98713723b0338cb28283af97e8d99&amp;pfdrt=sc&amp;width=tofit&amp;height=tofit&amp;pfdrid_c=false&amp;uid=007133b5-a5c5-4aec-9b20-9767f5b6c535" class="media-visualiza-pdf" height="98%" width="100%"><param name="width" value="tofit"><param name="height" value="tofit"></object></div></div><div id="formDialog:j_idt2426" class="ui-dialog ui-widget ui-widget-content ui-corner-all ui-shadow ui-hidden-container dialog-visualiza-pdf ui-draggable" style="display: none; width: 600px; height: auto;" role="dialog" aria-describedby="formDialog:j_idt2426_content" aria-hidden="true" aria-modal="true" aria-labelledby="formDialog:j_idt2426_title"><div class="ui-dialog-titlebar ui-widget-header ui-helper-clearfix ui-corner-top ui-draggable-handle"><span id="formDialog:j_idt2426_title" class="ui-dialog-title">Confirmação</span><a href="#" class="ui-dialog-titlebar-icon ui-dialog-titlebar-close ui-corner-all" aria-label="Close" role="button"><span class="ui-icon ui-icon-closethick"></span></a></div><div class="ui-dialog-content ui-widget-content" id="formDialog:j_idt2426_content" style="height: auto;"><div id="formDialog:j_idt2427" class="ui-panelgrid ui-widget"><div id="formDialog:j_idt2427_content" class="ui-panelgrid-content ui-widget-content ui-grid ui-grid-responsive"><div class="ui-g"><div class="ui-panelgrid-cell ui-g-12 ui-md-12"><span id="formDialog:panelMensagemConfirmacaoGuia">
+            <h4>
+                Deseja realizar a emissão da guia para o recolhimento do imposto neste momento?
+            </h4></span></div></div></div></div>
+
+    <div class="panel-footer" style="padding: 5px">
+        <table class="ui-panelgrid ui-widget" style="width: 100%;">
+            <tbody>
+            <tr>
+                <td style="text-align:center"><a id="formDialog:j_idt2430:j_idt2432" href="#" class="ui-commandlink ui-widget btn jarch-btn-cancel btn-sm " onclick="PF('widgetVarConfirmacaoGuia').hide();PrimeFaces.ab({s:&quot;formDialog:j_idt2430:j_idt2432&quot;,f:&quot;formDialog&quot;,p:&quot;formDialog:j_idt2430:j_idt2432&quot;,u:&quot;formDialog:j_idt2430:j_idt2432&quot;,onco:function(xhr,status,args,data){;}});return false;" tabindex="" style="float:center; min-width:100px;" target="">
+        <i class="fa fa-ban"></i>
+        Cancelar
+    </a>
+                </td>
+                <td style="text-align:right"><a id="formDialog:idCommandLinkConfirmacaoComGuia:commandLink" href="#" class="ui-commandlink ui-widget btn jarch-btn-save btn-sm " onclick="PF('widgetVarConfirmacaoGuia').hide(); showMessageProcess(false);;PrimeFaces.ab({s:&quot;formDialog:idCommandLinkConfirmacaoComGuia:commandLink&quot;,f:&quot;formDialog&quot;,p:&quot;formDialog:idCommandLinkConfirmacaoComGuia:commandLink&quot;,u:&quot;@(.messageheader)&quot;,onst:function(cfg){;},oner:function(xhr,status,error){;},onco:function(xhr,status,args,data){hideMessageProcess();;}});return false;" style="min-width:100px;">
+        <i class="fa fa-check"></i> Gerar Guia
+        </a>
+                    &nbsp;
+                    <a id="formDialog:idCommandLinkConfirmacaoSemGuia:commandLink" href="#" class="ui-commandlink ui-widget btn jarch-btn-save btn-sm " onclick="PF('widgetVarConfirmacaoGuia').hide(); showMessageProcess(false);;PrimeFaces.ab({s:&quot;formDialog:idCommandLinkConfirmacaoSemGuia:commandLink&quot;,f:&quot;formDialog&quot;,p:&quot;formDialog:idCommandLinkConfirmacaoSemGuia:commandLink&quot;,u:&quot;@(.messageheader)&quot;,onst:function(cfg){;},oner:function(xhr,status,error){;},onco:function(xhr,status,args,data){hideMessageProcess();;}});return false;" style="min-width:100px;">
+        <i class="fa fa-check"></i> Somente Gravar
+        </a>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div></div></div><div id="formDialog:j_idt2441" class="ui-dialog ui-widget ui-widget-content ui-corner-all ui-shadow ui-hidden-container ui-draggable" style="display: none; width: 600px; height: auto;" role="dialog" aria-describedby="formDialog:j_idt2441_content" aria-hidden="true" aria-modal="true" aria-labelledby="formDialog:j_idt2441_title"><div class="ui-dialog-titlebar ui-widget-header ui-helper-clearfix ui-corner-top ui-draggable-handle"><span id="formDialog:j_idt2441_title" class="ui-dialog-title">Confirmação</span><a href="#" class="ui-dialog-titlebar-icon ui-dialog-titlebar-close ui-corner-all" aria-label="Close" role="button"><span class="ui-icon ui-icon-closethick"></span></a></div><div class="ui-dialog-content ui-widget-content" id="formDialog:j_idt2441_content" style="height: auto;">
+
+    <h4>
+            A liberação da nota será realizada somente após o pagamento da guia ser realizado
+        
+    </h4>
+
+    <div class="panel-footer" style="padding: 5px">
+        <table class="ui-panelgrid ui-widget" style="width: 100%;">
+            <tbody>
+            <tr>
+                <td style="text-align:center"><a id="formDialog:j_idt2445:j_idt2447" href="#" class="ui-commandlink ui-widget btn jarch-btn-return btn-sm " onclick="PF('widgetVarMensagemGuiaEmitida').hide();;PrimeFaces.ab({s:&quot;formDialog:j_idt2445:j_idt2447&quot;,f:&quot;formDialog&quot;,p:&quot;formDialog:j_idt2445:j_idt2447&quot;,u:&quot;formDialog:j_idt2445:j_idt2447&quot;,onco:function(xhr,status,args,data){;}});return false;" style="min-width: 100px">
+        
+        <i class="fa fa-reply"></i> Fechar
+    </a>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div></div></div>
+
+<script type="application/javascript">
+    // $(document).ready(function () {
+    //     $('.dialog-visualiza-pdf').css("width", window.innerWidth * 0.9 + 'px');
+    //     $('.media-visualiza-pdf').css("width", window.innerWidth * 0.9 + 'px');
+    //     $('.dialog-visualiza-pdf').css("height", window.innerHeight * 0.9 + 'px');
+    //     $('.media-visualiza-pdf').css("height", window.innerHeight * 0.9 +  'px');
+    // });
+</script>
+
+
+</form></main><footer id="footer" style="display: flex">
+                <div class="footer-left" style="display: flex; align-items: center; gap: 12px; padding: 8px 15px; background: #f0f9ff; border-radius: 10px; border: 1px solid #e0f2fe; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                    <i class="fa fa-building" style="color: #0369a1;"></i><span style="font-weight: 700; color: #0c4a6e; font-size: 0.95em;">IMA</span>
+                    <span style="color: #bae6fd;">|</span><span style="color: #0c4a6e; font-size: 0.9em; font-weight: 500;">Powered by IMA - Informática de Municípios Associados</span>
+                </div>
+
+                <div class="footer-center text-center" style="flex-grow: 1; display: flex; align-items: center; justify-content: center; gap: 15px;">
+                    <span class="badge" style="padding: 6px 14px; font-weight: 600; background-color: #f0fdf4; color: #166534; border: 1px solid #dcfce7; border-radius: 20px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                        <i class="fa fa-desktop" style="margin-right: 6px; color: #15803d;"></i>
+                        Nota Fiscal de Serviço Eletrônica
+                    </span>
+                    <span style="padding: 4px 12px; background: #f8fafc; border-radius: 15px; border: 1px solid #f1f5f9; color: #64748b; font-size: 0.85em; font-weight: 600; display: flex; align-items: center;">
+                        <i class="fa fa-code-branch" style="margin-right: 5px; color: #94a3b8;"></i>
+                        2026.07.02.1839 WEB4
+                    </span>
+                </div>
+
+                <div class="footer-right text-right" style="display: flex; align-items: center; gap: 8px; padding: 8px 15px; background: #fffbeb; border-radius: 10px; border: 1px solid #fef3c7; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                    <i class="far fa-copyright" style="color: #b45309;"></i><span style="color: #92400e; font-size: 0.85em; font-weight: 600;">Todos os Direitos Reservados</span>
+                </div><div id="j_idt2458" style="width:64px;height:64px;position:fixed;left:5px;bottom:50px" class="jarch__ajaxstatus"><div id="j_idt2458_start" style="display: none;"><img id="j_idt2459" src="/notafiscal/javax.faces.resource/loader.gif.jsf?ln=images" alt=""></div><div id="j_idt2458_complete" style=""></div></div></footer>
+        </div>
+<form id="j_idt2463" name="j_idt2463" method="post" action="/notafiscal/paginas/notafiscal/emissaoNotaFiscalData.jsf" enctype="application/x-www-form-urlencoded">
+<input type="hidden" name="j_idt2463" value="j_idt2463">
+<input type="hidden" name="javax.faces.ViewState" id="j_id1:javax.faces.ViewState:9" value="-1095635306594764140:196538100140560192" autocomplete="off">
+<div id="j_idt2463:j_idt2464" class="ui-dialog ui-widget ui-widget-content ui-corner-all ui-shadow ui-hidden-container jarch-help ui-draggable" style="display: none; width: 70vw; height: auto;" role="dialog" aria-describedby="j_idt2463:j_idt2464_content" aria-hidden="true" aria-modal="true" aria-labelledby="j_idt2463:j_idt2464_title"><div class="ui-dialog-titlebar ui-widget-header ui-helper-clearfix ui-corner-top ui-draggable-handle"><span id="j_idt2463:j_idt2464_title" class="ui-dialog-title">Emitir Nota Fiscal Avulsa</span></div><div class="ui-dialog-content ui-widget-content" id="j_idt2463:j_idt2464_content" style="height: 60vh;">
+                <div class="p-3" style="height: 100%"><div id="j_idt2463:j_idt2475" class="ui-texteditor " style="width: 100%; height: 100%" aria-required="true"><div id="j_idt2463:j_idt2475_editor"><p>Emissão de nota fiscal avulsa</p></div><input id="j_idt2463:j_idt2475_input" name="j_idt2463:j_idt2475_input" type="hidden" autocomplete="off" value="&lt;p&gt;Emissão de nota fiscal avulsa&lt;/p&gt;"></div>
+                </div></div><div class="ui-dialog-footer ui-widget-content"><div><a id="j_idt2463:j_idt2477:j_idt2479" href="#" class="ui-commandlink ui-widget btn jarch-btn-return btn-sm jarch-btn-return" onclick="PF('widgetVarHelp').hide();PrimeFaces.ab({s:&quot;j_idt2463:j_idt2477:j_idt2479&quot;,f:&quot;j_idt2463&quot;,p:&quot;j_idt2463:j_idt2477:j_idt2479&quot;,u:&quot;j_idt2463:j_idt2477:j_idt2479&quot;,onco:function(xhr,status,args,data){;}});return false;" style="min-width: 120px; border-radius: 8px">
+        
+        <i class="fa fa-reply"></i> Voltar
+    </a></div></div></div>
+</form><script type="text/javascript" src="/notafiscal/javax.faces.resource/slimScroll/jquery.slimscroll.min.js.jsf?ln=vendor"></script><script type="text/javascript" src="/notafiscal/javax.faces.resource/metisMenu/dist/metisMenu.min.js.jsf?ln=vendor"></script><script type="text/javascript" src="/notafiscal/javax.faces.resource/iCheck/icheck.min.js.jsf?ln=vendor"></script><script type="text/javascript" src="/notafiscal/javax.faces.resource/sparkline/index.js.jsf?ln=vendor"></script><script type="text/javascript" src="/notafiscal/javax.faces.resource/sweetalert/dist/sweetalert.min.js.jsf?ln=vendor"></script><script type="text/javascript" src="/notafiscal/javax.faces.resource/homer.js.jsf?ln=scripts"></script><script type="text/javascript" src="/notafiscal/javax.faces.resource/bootstrap/3.3.1/js/bootstrap.js.jsf?ln=webjars"></script><script type="text/javascript" src="/notafiscal/javax.faces.resource/i18n.js.jsf?ln=js"></script><script type="text/javascript" src="RES_NOT_FOUND"></script><script type="text/javascript" src="/notafiscal/javax.faces.resource/jarch.js.jsf?ln=js&amp;v=202601310727"></script><script type="text/javascript" src="/notafiscal/javax.faces.resource/company.js.jsf?ln=js"></script><script type="text/javascript" src="/notafiscal/javax.faces.resource/local.js.jsf?ln=js"></script>
+
+    <script type="text/javascript">
+        $(function () {
+            $('.botaoSairMenu')
+                .click(
+                    function () {
+                        closeSystem(
+                            "Finaliza o Sistema?",
+                            "Dados não salvo(s) serão perdido(s)",
+                            "Cancelar",
+                            "Sim, quero sair",
+                            "Cancelado",
+                            "Voltar para sistema")
+                    });
+        });
+    </script><script type="text/javascript" src="/notafiscal/javax.faces.resource/localNotaFiscal.js.jsf?ln=js"></script>
+
+        <script type="text/javascript">
+            function newLineCheck(element, maxLine) {
+                var delim = "\n";
+                var txt = element.value.replace("\r", ""); // strip carriage returns
+                var arr = txt.split(delim);
+
+                if(arr.length > maxLine) {
+                    element.value = arr.slice(0, maxLine).join(delim); // set element text up to max delimiter
+                }
+            }
+        </script>
+
+<style type="text/css">
+    .notificacao-top {
+        filter: alpha(opacity=80);
+        /*opacity: 0.8;*/
+        padding: 0;
+        z-index: 1000;
+
+        /*top: 2px!important;*/
+        height: 18px;
+        background-color: #219ae5;
+        text-align: center;
+    }
+
+    .notificacao-top > span {
+        font-size: 1.4rem !important;
+        color: white;
+        font-weight: bold;
+
+    }
+</style><div id="j_idt2499" class="ui-notificationbar ui-widget ui-widget-content notificacao-top" style="top: 0px;"><span style="">Atenção - Ambiente de Homologação </span></div>
+
+<script type="text/javascript">
+    $(function () {
+        if (false) {
+            // toastr.warning('Ambiente de Homologação.' , 'Atenção');
+            PF('notificacaoAmbienteHomologacao').show();
+        }
+    });
+</script>
+    <script async="async" src="https://www.googletagmanager.com/gtag/js?id=UA-146732929-1"></script>
+
+    <script type="text/javascript">
+        $(function () {
+            const paginasEscolhidas = window.location.pathname.indexOf('notafiscal/paginas/login/bemVindo.jsf') > 0
+                || window.location.pathname.indexOf('notafiscal/paginas/notafiscal/emissaoNotaFiscalData.jsf') > 0
+                || window.location.pathname.indexOf('notafiscal/paginas/guia/guiaData.jsf') > 0
+                || window.location.pathname.indexOf('notafiscal/paginas/exportacaonota/exportacaoNota.jsf') > 0;
+
+            if (paginasEscolhidas) {
+                window.dataLayer = window.dataLayer || [];
+
+                function gtag() {
+                    dataLayer.push(arguments);
+                }
+
+                gtag('js', new Date());
+                gtag('config', 'UA-146732929-1');
+            }
+        });
+    </script>
+
+
+<form id="j_idt2504" name="j_idt2504" method="post" action="/notafiscal/paginas/notafiscal/emissaoNotaFiscalData.jsf" enctype="application/x-www-form-urlencoded">
+<input type="hidden" name="j_idt2504" value="j_idt2504">
+<input type="hidden" name="javax.faces.ViewState" id="j_id1:javax.faces.ViewState:10" value="-1095635306594764140:196538100140560192" autocomplete="off">
+<span id="j_idt2504:timerSessionApplication" title="" class="ui-timer ui-widget ui-widget-header ui-corner-all jarch-timer-sessao" style="display:none;border: unset">00:29:22</span>
+</form><script type="text/javascript">$(function(){$('head').addClass('multitenant-11');;$('head').attr('multitenant', '11');;$('body').addClass('multitenant-11');;$('body').attr('multitenant', '11');;$('head').addClass('multitenant-11');;$('head').attr('multitenant', '11');;$('body').addClass('multitenant-11');;$('body').attr('multitenant', '11');;$('head').addClass('multitenant-11');;$('head').attr('multitenant', '11');;$('body').addClass('multitenant-11');;$('body').attr('multitenant', '11');;$('head').addClass('multitenant-11');;$('head').attr('multitenant', '11');;$('body').addClass('multitenant-11');;$('body').attr('multitenant', '11');;$('head').addClass('multitenant-11');;$('head').attr('multitenant', '11');;$('body').addClass('multitenant-11');;$('body').attr('multitenant', '11');;hideMessageProcess();;$('head').addClass('multitenant-11');;$('head').attr('multitenant', '11');;$('body').addClass('multitenant-11');;$('body').attr('multitenant', '11');;$('head').addClass('multitenant-11');;$('head').attr('multitenant', '11');;$('body').addClass('multitenant-11');;$('body').attr('multitenant', '11');;});</script>
+<form id="j_idt2505" name="j_idt2505" method="post" action="/notafiscal/paginas/notafiscal/emissaoNotaFiscalData.jsf" enctype="multipart/form-data">
+<input type="hidden" name="j_idt2505" value="j_idt2505">
+<input type="hidden" name="javax.faces.ViewState" id="j_id1:javax.faces.ViewState:11" value="-1095635306594764140:196538100140560192" autocomplete="off">
+
+    <div id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito"><div id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:dialogSelect" class="ui-dialog ui-widget ui-widget-content ui-corner-all ui-shadow ui-hidden-container lookup-dialog ui-draggable" style="max-height: 90vh; display: none; width: 900px; height: auto;" role="dialog" aria-describedby="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:dialogSelect_content" aria-hidden="true" aria-modal="true"><div class="ui-dialog-content ui-widget-content" id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:dialogSelect_content" style="height: 552px;">
+
+            <h3 class="lookup-dialog-header">
+                Descrição Favorita
+            </h3><div id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2508" class="ui-scrollpanel ui-scrollpanel-native ui-widget ui-widget-content ui-corner-all" style="width:100%; max-height: 80vh; border: 0">
+    <style>
+        .jarch-filtersearch ul.ui-chips-container {
+            width: 100%;
+        }
+
+        .jarch-filtersearch .ui-chips-container li input {
+            min-height: 26px;
+        }
+    </style>
+            <style>
+                .ui-tabs-panel {
+                    padding-top: 0 !important;
+                    /*padding-bottom: 0 !important;*/
+                }
+
+                .ui-tabs-panels > div.ui-tabs-panel {
+                    padding: 5px 0 5px 0;
+                }
+            </style>
+
+    <div id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2509" class="jarch-filtersearch"><span id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2509:panelGroupFields">
+            <div class="panel-body" style="padding: 0">
+                
+                <div class="table-responsive filter-search">
+
+                            <div style="magin: 0; padding: 0;">
+                            </div><div id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2509:tabViewFilterSearch" class="ui-tabs ui-widget ui-widget-content ui-corner-all ui-hidden-container ui-tabs-top" style="border: 0px !important; padding: 0px !important;" data-widget="widget_j_idt2505_ldConfiguracaoEmpresaDescricaoFavorito_j_idt2509_tabViewFilterSearch"><ul class="nav nav-pills" role="tablist"><li class="ui-tabs-header ui-state-default ui-tabs-selected ui-state-active ui-corner-top" role="presentation" data-index="0" style="display: none; height: 0; padding: 0" data-test="tabFilterSearchlabel.main"><a id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2509:tabViewFilterSearch:tabFilterSearch_header" href="#j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2509:tabViewFilterSearch:tabFilterSearch" role="tab" aria-expanded="true" aria-selected="true" data-index="0" aria-controls="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2509:tabViewFilterSearch:tabFilterSearch"><em class="fa fa-list-alt"> </em>Principal</a></li></ul><div class="ui-tabs-panels"><div id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2509:tabViewFilterSearch:tabFilterSearch" class="ui-tabs-panel ui-widget-content ui-corner-bottom" role="tabpanel" aria-hidden="false" aria-labelledby="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2509:tabViewFilterSearch:tabFilterSearch_header" data-index="0">
+
+                                            
+                                            <div class="row show-grid">
+                                            </div>
+
+                                            
+                                            <div class="row show-grid">
+
+                                                    <div class="col-md-6" style="margin: 2px 0 2px 0; padding: 2px 10px"><label id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2509:tabViewFilterSearch:outputLabelFielSearch" class="ui-outputlabel ui-widget" style="padding-right: 10px; padding-top: 5px"><span class="ui-outputlabel-label">Descrição</span></label><table class="filtersearch__panelgrid-showcondition filtersearch__panelgrid-descricao">
+<tbody>
+<tr>
+<td class="filtersearch__panelgrid-condition"><div id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2509:tabViewFilterSearch:j_idt2524" class="ui-selectonemenu ui-widget ui-state-default ui-corner-all filtersearch__selectonemenu filtersearch__selectonemenu-larger_equal" data-test="Descrição condition"><div class="ui-helper-hidden-accessible"><select id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2509:tabViewFilterSearch:j_idt2524_input" name="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2509:tabViewFilterSearch:j_idt2524_input" tabindex="-1" autocomplete="off" aria-hidden="true" data-p-hl="onemenu"><option value="STARTS_WITH" data-escape="true">Inicia</option><option value="CONTAINS" data-escape="true">Contém</option><option value="NOT_CONTAINS" data-escape="true">Não Contém</option><option value="ENDS_WITH" data-escape="true">Termina</option></select></div><span id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2509:tabViewFilterSearch:j_idt2524_label" class="ui-selectonemenu-label ui-inputfield ui-corner-all" tabindex="0" aria-controls="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2509:tabViewFilterSearch:j_idt2524_panel" role="combobox" aria-haspopup="listbox" aria-expanded="false" data-test="Descrição condition" aria-label="Inicia">Inicia</span><div class="ui-selectonemenu-trigger ui-state-default ui-corner-right"><span class="ui-icon ui-icon-triangle-1-s ui-c"></span></div></div></td>
+<td class="filtersearch__panelgrid-value"><input id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2509:tabViewFilterSearch:filterSearchdescricao" name="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2509:tabViewFilterSearch:filterSearchdescricao" type="text" class="ui-inputfield ui-inputtext ui-widget ui-state-default ui-corner-all filtersearch_field filtersearch__inputtext filtersearch__inputtext-descricao" data-tooltip="" data-test="Descrição"></td>
+</tr>
+</tbody>
+</table>
+
+                                                    </div>
+                                            </div></div></div><input id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2509:tabViewFilterSearch_activeIndex" name="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2509:tabViewFilterSearch_activeIndex" type="hidden" autocomplete="off" value="0"></div>
+
+                            <div class="col-md-12" style="magin: 0; padding: 0;">
+                            </div>
+                </div>
+            </div></span>
+
+        <div class="panel-footer" style="padding: 5px">
+            <table class="ui-panelgrid ui-widget" style="width: 100%;">
+                <tbody>
+                <tr>
+                    <td style="text-align:center"><a id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2509:j_idt2534:idCommandLink" href="#" class="ui-commandlink ui-widget btn jarch-btn-clean btn-sm filtersearch__button-clean" onclick="showMessageProcess(true);PrimeFaces.ab({s:&quot;j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2509:j_idt2534:idCommandLink&quot;,f:&quot;j_idt2505&quot;,p:&quot;j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2509&quot;,u:&quot;j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2509:panelGroupFields,@(.dialogselect-datatable),@(.dialogselect-panelselecionado)&quot;,rv:true,onco:function(xhr,status,args,data){hideMessageProcess();}});return false;" style="width: 100px; float: left">
+        <i class="fa fa-eraser"></i>
+        Limpar
+
+        </a>
+                    </td>
+                    <td style="text-align:center"><a id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2509:j_idt2538:j_idt2540" href="#" class="ui-commandlink ui-widget btn jarch-btn-search btn-sm btn btn-info btn-sm filtersearch__button-search" onclick="showMessageProcess(true);PrimeFaces.ab({s:&quot;j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2509:j_idt2538:j_idt2540&quot;,f:&quot;j_idt2505&quot;,p:&quot;j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2509&quot;,u:&quot;@(.dialogselect-datatable),@(.dialogselect-panelselecionado),@(.base-messageheader),@(.filtersearch__panelgrid-hidecondition),@(.filtersearch_field)&quot;,onco:function(xhr,status,args,data){hideMessageProcess();}});return false;" style="width: 100px; float: right">
+        <i class="fa fa-search"></i>
+        Pesquisar
+    </a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div><svg xmlns="http://www.w3.org/2000/svg" id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2543" width="1" height="10"></svg><div id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:dataTableSelect" class="ui-datatable ui-widget ui-datatable-scrollable dialogselect-datatable" style="min-height: 200px"><div class="ui-widget-header ui-datatable-scrollable-header"><div class="ui-datatable-scrollable-header-box"><table role="grid"><thead id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:dataTableSelect_head"><tr><th id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:dataTableSelect:selectAllRows" class="ui-state-default ui-selection-column" scope="col" style="width:30px;text-align:center"><span class="ui-column-title"></span><div class="ui-chkbox ui-chkbox-all ui-widget"><div id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:dataTableSelect_head_checkbox" role="checkbox" tabindex="0" aria-checked="false" class="ui-chkbox-box ui-widget ui-corner-all ui-state-default" aria-label="All items unselected"><span class="ui-chkbox-icon ui-icon ui-icon-blank ui-c"></span></div></div></th><th id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:dataTableSelect:j_idt2544:0" class="ui-state-default" aria-label="Descrição" scope="col" style="text-align: left; width: 500px"><span class="ui-column-title">Descrição</span></th></tr></thead></table></div></div><div class="ui-datatable-scrollable-body" tabindex="-1" style="max-height:200px"><table role="grid"><tbody id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:dataTableSelect_data" class="ui-datatable-data ui-widget-content" tabindex="0"><tr data-ri="0" data-rk="38754" class="ui-widget-content ui-datatable-even ui-datatable-selectable" aria-selected="false"><td role="gridcell" style="width:30px;text-align:center" class="ui-selection-column ui-column-unselectable"><div class="ui-chkbox ui-widget"><div id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:dataTableSelect_null_checkbox" role="checkbox" tabindex="0" aria-checked="false" class="ui-chkbox-box ui-widget ui-corner-all ui-state-default" aria-label="Select 38754"><span class="ui-chkbox-icon ui-icon ui-icon-blank ui-c"></span></div></div></td><td role="gridcell" style="text-align: left; width: 500px"><span style="word-wrap: break-word">Consultoria em Informatica</span></td></tr></tbody></table></div><div class="ui-widget-header ui-datatable-scrollable-footer"><div class="ui-datatable-scrollable-footer-box"><table role="grid"></table></div></div><input id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:dataTableSelect_selection" name="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:dataTableSelect_selection" type="hidden" autocomplete="off" value=""><input id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:dataTableSelect_scrollState" name="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:dataTableSelect_scrollState" type="hidden" autocomplete="off" value="0,0"></div>
+
+                <div class="modal-footer"><a id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2552:j_idt2554" href="#" class="ui-commandlink ui-widget btn jarch-btn-cancel btn-sm " onclick=";PrimeFaces.ab({s:&quot;j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2552:j_idt2554&quot;,f:&quot;j_idt2505&quot;,p:&quot;j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2552:j_idt2554&quot;,u:&quot;@(.dados-descricao-favorito),@(.base-messageheader)&quot;,onco:function(xhr,status,args,data){PF('ConfiguracaoEmpresaDescricaoFavoritoFilterSelectAction').hide();;}});return false;" tabindex="" style="float:center; min-width:100px;" target="">
+        <i class="fa fa-ban"></i>
+        Cancelar
+    </a><a id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:commandLinkSave" href="#" class="ui-commandlink ui-widget btn btn-success btn-sm dialogselect__save" onclick="PrimeFaces.ab({s:&quot;j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:commandLinkSave&quot;,f:&quot;j_idt2505&quot;,p:&quot;j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:commandLinkSave&quot;,u:&quot;@(.dados-descricao-favorito),@(.base-messageheader)&quot;,onco:function(xhr,status,args,data){PF('ConfiguracaoEmpresaDescricaoFavoritoFilterSelectAction').hide();;}});return false;" style="min-width: 100px">
+                        <i class="fa fa-save"></i> Confirmar
+
+                        </a>
+                </div><svg xmlns="http://www.w3.org/2000/svg" id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2558" width="1" height="10"></svg><div id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2559" class="ui-panel ui-widget ui-widget-content ui-corner-all dialogselect-panelselecionado" data-widget="widget_j_idt2505_ldConfiguracaoEmpresaDescricaoFavorito_j_idt2559" role="region" aria-labelledby="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2559_header"><div id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2559_header" class="ui-panel-titlebar ui-widget-header ui-helper-clearfix ui-corner-all"><span class="ui-panel-title">Selecionado - 0</span></div><div id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2559_content" class="ui-panel-content ui-widget-content"><table style="width:100%;">
+<tbody>
+<tr>
+<td><label style="text-align:right; width:100%;">Quantidade </label></td>
+</tr>
+</tbody>
+</table>
+<div id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2563" class="ui-panelgrid ui-widget jarch__panelselected-datalist" style="width:100%;"><div id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2563_content" class="ui-panelgrid-content ui-widget-content ui-grid ui-grid-responsive"><div class="ui-grid-row"><div class="ui-panelgrid-cell ui-grid-col-11"><div id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:selectManyMenu" class="ui-selectmanymenu ui-inputfield ui-widget ui-widget-content ui-corner-all " style="text-align:left; width:100%; height:100px; padding: 0"><div class="ui-helper-hidden-accessible"><select id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:selectManyMenu_input" name="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:selectManyMenu_input" multiple="multiple" size="2" data-p-hl="listbox"></select></div><div class="ui-selectlistbox-listcontainer" style="height:85px"><ul class="ui-selectlistbox-list" role="listbox" aria-multiselectable="true"></ul></div></div></div><div class="ui-panelgrid-cell ui-grid-col-1"><table style="text-align:center;">
+<tbody>
+<tr>
+<td>
+                            <br></td>
+</tr>
+<tr>
+<td><button id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2567" name="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2567" class="ui-button ui-widget ui-state-default ui-corner-all ui-button-icon-only panelselected-clear" onclick="PrimeFaces.ab({s:&quot;j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2567&quot;,f:&quot;j_idt2505&quot;,p:&quot;j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2567&quot;,u:&quot;j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:selectManyMenu,j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:dataTableSelect&quot;});return false;" label="Limpar" type="submit"><span class="ui-button-icon-left ui-icon ui-c ui-icon-trash"></span><span class="ui-button-text ui-c">ui-button</span></button></td>
+</tr>
+</tbody>
+</table>
+</div></div></div></div></div></div></div></div></div>
+    </div>
+</form>
+
+<div class="ui-dialog-docking-zone"></div><div id="modalDadosPessoa" class="modal fade hmodal-danger" role="dialog" aria-hidden="true" style="z-index: 100;"><div id="formNotaFiscal:painelPopupnotaFiscalPessoa" class="modal-dialog modal-lg">--&gt;
+
+                <div class="modal-content">
+                    <div class="color-line"></div>
+                    <div class="modal-header" style="padding: 10px;">
+                        <h4 class="modal-title">
+                            Tomador Não Cadastrado
+                        </h4>
+                        <small class="font-bold">
+                            Preencha o formulário para inclusão do cadastro
+                        </small>
+                    </div>
+                    <div class="modal-body">
+
+                    </div>
+                    <div class="modal-footer"><a id="formNotaFiscal:j_idt775" href="#" class="ui-commandlink ui-widget btn btn-danger btn-outline" onclick="PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt775&quot;,f:&quot;formNotaFiscal&quot;,p:&quot;formNotaFiscal:j_idt775&quot;});return false;">
+                            Cancelar
+                        </a><a id="formNotaFiscal:j_idt777" href="#" class="ui-commandlink ui-widget btn btn-success" onclick="showMessageProcess(true);PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt777&quot;,f:&quot;formNotaFiscal&quot;,p:&quot;formNotaFiscal:painelPopupnotaFiscalPessoa&quot;,u:&quot;@(.dados-pessoa),@(.dialog-visualiza-pdf),@(.messageheader),formNotaFiscal:panelObra,@(.panel-local-prestacao),@(.panel-local-resultado-prestacao),@(.dados-local-prestacao),@(.dados-regra-tributacao),@(.panel-atividade),@(.dados-deducao),@(.panel-calculo)&quot;,oner:function(xhr,status,error){hideMessageProcess();},onco:function(xhr,status,args,data){hideMessageProcess();}});return false;">
+                            <i class="pe-7s-add-user"></i>
+                            Gravar
+                        </a>
+                    </div>
+                </div></div>
+
+</div><div id="modalDeducaoMateriais" tabindex="-1" role="dialog" aria-hidden="true" class="modal fade hmodal-info in">
+<form id="formNotaFiscal:j_idt2119" name="formNotaFiscal:j_idt2119" method="post" action="/notafiscal/paginas/notafiscal/emissaoNotaFiscalData.jsf" enctype="application/x-www-form-urlencoded" data-an-count="3" data-an-form-handler="bifmx">
+<input type="hidden" name="formNotaFiscal:j_idt2119" value="formNotaFiscal:j_idt2119">
+<input type="hidden" name="javax.faces.ViewState" id="j_id1:javax.faces.ViewState:4" value="-1095635306594764140:196538100140560192" autocomplete="off">
+
+        <div class="modal-dialog modal-lg" style="width: 90vw">
+
+
+            <div class="modal-content">
+                <div class="color-line"></div>
+                <div class="modal-header" style="padding: 5px 30px;">
+                    <h4 class="modal-title">
+                        Dedução por Mapa
+                    </h4>
+                    <small class="font-bold">
+                        Informe as notas para dedução
+                    </small>
+                </div>
+                <div class="modal-body">
+                    <div id="deducaoNotaMaterial" class="row">
+                        <div class="row"><table id="formNotaFiscal:j_idt2119:j_idt2121" style="width:100%" class="ui-panelgrid ui-widget" role="grid"><tbody><tr class="ui-widget-content"><td role="gridcell" class="ui-panelgrid-cell ui-grid-col-1">
+                                    <label class="control-label">
+                                        Número da Nota
+                                    </label>
+                                    <br>
+                                    <div class="input-group">
+    <div id="formNotaFiscal:j_idt2119:j_idt2124"><span id="formNotaFiscal:j_idt2119:j_idt2124:idInteiro" class="ui-inputnumber ui-widget input-number"><input id="formNotaFiscal:j_idt2119:j_idt2124:idInteiro_input" name="formNotaFiscal:j_idt2119:j_idt2124:idInteiro_input" type="text" autocomplete="off" value="" style="text-align:right; width: 100%; width: 100%" class="ui-inputfield ui-inputtext ui-widget ui-state-default ui-corner-all" inputmode="numeric" onchange="PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt2119:j_idt2124:idInteiro&quot;,e:&quot;change&quot;,f:&quot;formNotaFiscal:j_idt2119&quot;,p:&quot;formNotaFiscal:j_idt2119:j_idt2124:idInteiro&quot;,u:&quot;formNotaFiscal:j_idt2119:j_idt2124:idInteiro&quot;});" data-p-label="" data-p-rmsg="" data-p-cmsg=": Número inválido" data-p-con="javax.faces.Long" data-p-hl="inputnumber"><input id="formNotaFiscal:j_idt2119:j_idt2124:idInteiro_hinput" name="formNotaFiscal:j_idt2119:j_idt2124:idInteiro_hinput" type="hidden" autocomplete="off" value="" data-p-label="" data-p-rmsg="" data-p-cmsg=": Número inválido" data-p-con="javax.faces.Long" data-p-hl="inputnumber"></span>
+    </div>
+                                    </div></td><td role="gridcell" class="ui-panelgrid-cell ui-grid-col-1">
+                                    <label class="control-label">
+                                        Valor a Deduzir
+                                    </label>
+                                    <div class="input-group"><div id="formNotaFiscal:j_idt2119:j_idt2131" class="input-number"><span id="formNotaFiscal:j_idt2119:j_idt2131:idInputText" class="ui-inputnumber ui-widget input-number" style="text-align:right; width: 100%; "><input id="formNotaFiscal:j_idt2119:j_idt2131:idInputText_input" name="formNotaFiscal:j_idt2119:j_idt2131:idInputText_input" type="text" autocomplete="off" value="" class="ui-inputfield ui-inputtext ui-widget ui-state-default ui-corner-all" placeholder="" inputmode="decimal" onchange="PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt2119:j_idt2131:idInputText&quot;,e:&quot;change&quot;,f:&quot;formNotaFiscal:j_idt2119&quot;,p:&quot;formNotaFiscal:j_idt2119:j_idt2131:idInputText&quot;,u:&quot;formNotaFiscal:j_idt2119:j_idt2131:idInputText&quot;});" onblur="PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt2119:j_idt2131:idInputText&quot;,e:&quot;blur&quot;,f:&quot;formNotaFiscal:j_idt2119&quot;,p:&quot;formNotaFiscal:j_idt2119:j_idt2131:idInputText&quot;,u:&quot;formNotaFiscal:j_idt2119:j_idt2131:idInputText&quot;,onst:function(cfg){PrimeFaces.customFocus = true;}});" onfocus="this.setSelectionRange(0, this.value.length)" data-p-label="" data-p-rmsg="" data-p-cmsg=": Número inválido" data-p-con="javax.faces.BigDecimal" data-p-hl="inputnumber"><input id="formNotaFiscal:j_idt2119:j_idt2131:idInputText_hinput" name="formNotaFiscal:j_idt2119:j_idt2131:idInputText_hinput" type="hidden" autocomplete="off" value="0.00" data-p-label="" data-p-rmsg="" data-p-cmsg=": Número inválido" data-p-con="javax.faces.BigDecimal" data-p-hl="inputnumber"></span></div>
+                                    </div></td><td role="gridcell" class="ui-panelgrid-cell ui-grid-col-1">
+                                    <label class="control-label">
+                                        Saldo Dedução
+                                    </label>
+                                    <div class="input-group"><div id="formNotaFiscal:j_idt2119:j_idt2136" class="input-number"><span id="formNotaFiscal:j_idt2119:j_idt2136:idInputText" class="ui-inputnumber ui-widget input-number" style="text-align:right; width: 100%; "><input id="formNotaFiscal:j_idt2119:j_idt2136:idInputText_input" name="formNotaFiscal:j_idt2119:j_idt2136:idInputText_input" type="text" autocomplete="off" value="" class="ui-inputfield ui-inputtext ui-widget ui-state-default ui-corner-all" placeholder="" inputmode="decimal" onchange="PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt2119:j_idt2136:idInputText&quot;,e:&quot;change&quot;,f:&quot;formNotaFiscal:j_idt2119&quot;,p:&quot;formNotaFiscal:j_idt2119:j_idt2136:idInputText&quot;,u:&quot;formNotaFiscal:j_idt2119:j_idt2136:idInputText&quot;});" onblur="PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt2119:j_idt2136:idInputText&quot;,e:&quot;blur&quot;,f:&quot;formNotaFiscal:j_idt2119&quot;,p:&quot;formNotaFiscal:j_idt2119:j_idt2136:idInputText&quot;,u:&quot;formNotaFiscal:j_idt2119:j_idt2136:idInputText&quot;,onst:function(cfg){PrimeFaces.customFocus = true;}});" onfocus="this.setSelectionRange(0, this.value.length)" data-p-label="" data-p-rmsg="" data-p-cmsg=": Número inválido" data-p-con="javax.faces.BigDecimal" data-p-hl="inputnumber"><input id="formNotaFiscal:j_idt2119:j_idt2136:idInputText_hinput" name="formNotaFiscal:j_idt2119:j_idt2136:idInputText_hinput" type="hidden" autocomplete="off" value="0.00" data-p-label="" data-p-rmsg="" data-p-cmsg=": Número inválido" data-p-con="javax.faces.BigDecimal" data-p-hl="inputnumber"></span></div>
+                                    </div></td><td role="gridcell" class="ui-panelgrid-cell ui-grid-col-2">
+                                    <label class="control-label">
+                                        CPF/CNPJ Fornecedor
+                                    </label>
+                                    <div class="input-group">
+    <div id="formNotaFiscal:j_idt2119:j_idt2141:idInputMaskCpfCnpj" class="jarch-inputtext"><input id="formNotaFiscal:j_idt2119:j_idt2141:idInputMaskCpfCnpj:inputText" name="formNotaFiscal:j_idt2119:j_idt2141:idInputMaskCpfCnpj:inputText" type="text" style="width:140px; " class="ui-inputfield ui-inputtext ui-widget ui-state-default ui-corner-all input-cpf-cnpj" maxlength="18" placeholder="" size="0" onkeypress="formatCpfCnpjAlfanumerico(this, cpfCnpjAlfanumerico)" onkeyup="formatCpfCnpjAlfanumerico(this, cpfCnpjAlfanumerico)" onblur="PrimeFaces.bcn(this,event,[function(event){ajustaTamanhoCpfCnpjAlfanumerico(this, tamanhoCpfCnpjAlfanumerico)},function(event){PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt2119:j_idt2141:idInputMaskCpfCnpj:inputText&quot;,e:&quot;blur&quot;,f:&quot;formNotaFiscal:j_idt2119&quot;,p:&quot;formNotaFiscal:j_idt2119:j_idt2141:idInputMaskCpfCnpj:inputText&quot;,u:&quot;formNotaFiscal:j_idt2119:j_idt2141:idInputMaskCpfCnpj:inputText&quot;});}])" data-p-label="" data-p-rmsg="" data-p-vmsg="CPF/CNPJ inválido" data-p-cmsg="Conversão CPF/CNPJ inválido">
+    </div>
+                                    </div></td><td role="gridcell" class="ui-panelgrid-cell ui-grid-col-6">
+                                    <label class="control-label">
+                                        Nome Fornecedor
+                                    </label>
+                                    <div class="input-group"><input id="formNotaFiscal:j_idt2119:j_idt2147" name="formNotaFiscal:j_idt2119:j_idt2147" type="text" style="width: 100%" class="ui-inputfield ui-inputtext ui-widget ui-state-default ui-corner-all" onchange="PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt2119:j_idt2147&quot;,e:&quot;change&quot;,f:&quot;formNotaFiscal:j_idt2119&quot;,p:&quot;formNotaFiscal:j_idt2119:j_idt2147&quot;,u:&quot;formNotaFiscal:j_idt2119:j_idt2147&quot;});">
+                                    </div></td><td role="gridcell" class="ui-panelgrid-cell ui-grid-col-1"><a id="formNotaFiscal:j_idt2119:j_idt2150:j_idt2152" href="#" class="ui-commandlink ui-widget btn jarch-btn-search btn-sm " onclick="showMessageProcess(true);PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt2119:j_idt2150:j_idt2152&quot;,f:&quot;formNotaFiscal:j_idt2119&quot;,p:&quot;formNotaFiscal:j_idt2119:j_idt2150:j_idt2152&quot;,u:&quot;@(.dados-deducao)&quot;,onco:function(xhr,status,args,data){hideMessageProcess();}});return false;" style="float:center; min-width:100px;">
+        <i class="fa fa-search"></i>
+        Pesquisar
+    </a></td></tr></tbody></table>
+                        </div>
+
+                        <hr>
+
+                        <div class="col-lg-12">
+                            <div class="row"><div id="formNotaFiscal:j_idt2119:j_idt2155" class="ui-datatable ui-widget dados-deducao .ui-datatable-hor-scroll" style="width:100%"><div class="ui-datatable-tablewrapper"><table role="grid" style="table-layout:auto;width:100%;"><thead id="formNotaFiscal:j_idt2119:j_idt2155_head"><tr><th id="formNotaFiscal:j_idt2119:j_idt2155:j_idt2156" class="ui-state-default ui-selection-column" scope="col" style="width:35px;text-align:center"><span class="ui-column-title"></span><div class="ui-chkbox ui-chkbox-all ui-widget"><div id="formNotaFiscal:j_idt2119:j_idt2155_head_checkbox" role="checkbox" tabindex="0" aria-checked="false" class="ui-chkbox-box ui-widget ui-corner-all ui-state-default ui-state-disabled" aria-label="All items unselected"><span class="ui-chkbox-icon ui-icon ui-icon-blank ui-c"></span></div></div></th><th id="formNotaFiscal:j_idt2119:j_idt2155:j_idt2157" class="ui-state-default ui-sortable-column" aria-label="Número da Nota: activate to sort column ascending" scope="col" style="width:10%" tabindex="0" aria-sort="other"><span class="ui-column-title">Número da Nota</span><span class="ui-sortable-column-icon ui-icon ui-icon-carat-2-n-s"></span><span class="ui-sortable-column-badge ui-helper-hidden"></span></th><th id="formNotaFiscal:j_idt2119:j_idt2155:j_idt2159" class="ui-state-default ui-sortable-column" aria-label="Tipo Mapa: activate to sort column ascending" scope="col" style="width:10%" tabindex="0"><span class="ui-column-title">Tipo Mapa</span><span class="ui-sortable-column-icon ui-icon ui-icon-carat-2-n-s"></span><span class="ui-sortable-column-badge ui-helper-hidden"></span></th><th id="formNotaFiscal:j_idt2119:j_idt2155:j_idt2161" class="ui-state-default ui-sortable-column" aria-label="CPF/CNPJ Fornecedor: activate to sort column ascending" scope="col" style="width:20%" tabindex="0"><span class="ui-column-title">CPF/CNPJ Fornecedor</span><span class="ui-sortable-column-icon ui-icon ui-icon-carat-2-n-s"></span><span class="ui-sortable-column-badge ui-helper-hidden"></span></th><th id="formNotaFiscal:j_idt2119:j_idt2155:j_idt2163" class="ui-state-default ui-sortable-column" aria-label="Nome Fornecedor: activate to sort column ascending" scope="col" tabindex="0"><span class="ui-column-title">Nome Fornecedor</span><span class="ui-sortable-column-icon ui-icon ui-icon-carat-2-n-s"></span><span class="ui-sortable-column-badge ui-helper-hidden"></span></th><th id="formNotaFiscal:j_idt2119:j_idt2155:j_idt2165" class="ui-state-default ui-sortable-column" aria-label="Valor a Deduzir: activate to sort column ascending" scope="col" style="width: 10%; text-align:right" tabindex="0"><span class="ui-column-title">Valor a Deduzir</span><span class="ui-sortable-column-icon ui-icon ui-icon-carat-2-n-s"></span><span class="ui-sortable-column-badge ui-helper-hidden"></span></th><th id="formNotaFiscal:j_idt2119:j_idt2155:j_idt2167" class="ui-state-default ui-sortable-column" aria-label="Saldo Dedução: activate to sort column ascending" scope="col" style="width: 10%; text-align:right" tabindex="0"><span class="ui-column-title">Saldo Dedução</span><span class="ui-sortable-column-icon ui-icon ui-icon-carat-2-n-s"></span><span class="ui-sortable-column-badge ui-helper-hidden"></span></th></tr></thead><tbody id="formNotaFiscal:j_idt2119:j_idt2155_data" class="ui-datatable-data ui-widget-content" tabindex="0"><tr class="ui-widget-content ui-datatable-empty-message"><td colspan="7">Registro não encontrado</td></tr></tbody></table></div><div id="formNotaFiscal:j_idt2119:j_idt2155_paginator_bottom" class="ui-paginator ui-paginator-bottom ui-widget-header ui-corner-bottom" role="navigation"><span class="ui-paginator-current">1/1</span><a href="#" class="ui-paginator-first ui-state-default ui-corner-all ui-state-disabled" tabindex="-1" aria-label="First Page"><span class="ui-icon ui-icon-seek-first">F</span></a><a href="#" class="ui-paginator-prev ui-state-default ui-corner-all ui-state-disabled" tabindex="-1" aria-label="Previous Page"><span class="ui-icon ui-icon-seek-prev">P</span></a><span class="ui-paginator-pages"></span><a href="#" class="ui-paginator-next ui-state-default ui-corner-all ui-state-disabled" tabindex="-1" aria-label="Next Page"><span class="ui-icon ui-icon-seek-next">N</span></a><a href="#" class="ui-paginator-last ui-state-default ui-corner-all ui-state-disabled" tabindex="-1" aria-label="Last Page"><span class="ui-icon ui-icon-seek-end">E</span></a><label id="formNotaFiscal:j_idt2119:j_idt2155:j_id43_rppLabel" for="formNotaFiscal:j_idt2119:j_idt2155:j_id43" class="ui-paginator-rpp-label ui-helper-hidden"></label><select id="formNotaFiscal:j_idt2119:j_idt2155:j_id43" name="formNotaFiscal:j_idt2119:j_idt2155_rppDD" aria-labelledby="formNotaFiscal:j_idt2119:j_idt2155:j_id43_rppLabel" class="ui-paginator-rpp-options ui-widget ui-state-default ui-corner-left" autocomplete="off" aria-label="Rows per page"><option value="5" selected="selected">5</option><option value="10">10</option><option value="20">20</option><option value="50">50</option><option value="100">100</option></select></div><input id="formNotaFiscal:j_idt2119:j_idt2155_selection" name="formNotaFiscal:j_idt2119:j_idt2155_selection" type="hidden" autocomplete="off" value=""></div>
+                            </div>
+                            <div class="row">
+                                <h4 class="text-info">
+                                    Notas Selecionadas
+                                </h4><div id="formNotaFiscal:j_idt2119:dtDeducaoSelecionado" class="ui-datatable ui-widget dados-deducao"><div class="ui-datatable-tablewrapper"><table role="grid"><thead id="formNotaFiscal:j_idt2119:dtDeducaoSelecionado_head"><tr><th id="formNotaFiscal:j_idt2119:dtDeducaoSelecionado:j_idt2170" class="ui-state-default" aria-label="Excluir" scope="col" style="width:60px; text-align:center;width:60px"><span class="ui-column-title">Excluir</span></th><th id="formNotaFiscal:j_idt2119:dtDeducaoSelecionado:j_idt2173" class="ui-state-default" aria-label="Número da Nota" scope="col" style="width:149px; text-align:center"><span class="ui-column-title">Número da Nota</span></th><th id="formNotaFiscal:j_idt2119:dtDeducaoSelecionado:j_idt2176" class="ui-state-default" aria-label="Saldo Dedução" scope="col" style="width:300px; text-align:right"><span class="ui-column-title">Saldo Dedução</span></th><th id="formNotaFiscal:j_idt2119:dtDeducaoSelecionado:j_idt2179" class="ui-state-default" aria-label="Saldo a deduzir" scope="col" style="width:300px; text-align:right"><span class="ui-column-title">Saldo a deduzir</span></th></tr></thead><tbody id="formNotaFiscal:j_idt2119:dtDeducaoSelecionado_data" class="ui-datatable-data ui-widget-content"><tr class="ui-widget-content ui-datatable-empty-message"><td colspan="4">Registro não encontrado</td></tr></tbody><tfoot id="formNotaFiscal:j_idt2119:dtDeducaoSelecionado_foot"><tr><td class="ui-state-default" style="width:60px; text-align:center"></td><td class="ui-state-default" style="width:149px; text-align:center"></td><td class="ui-state-default" style="width:300px; text-align:right"></td><td class="ui-state-default" style="width:300px; text-align:right"></td></tr></tfoot></table></div><div id="formNotaFiscal:j_idt2119:dtDeducaoSelecionado_paginator_bottom" class="ui-paginator ui-paginator-bottom ui-widget-header ui-corner-bottom" role="navigation"><span class="ui-paginator-current">(1 of 1)</span><a href="#" class="ui-paginator-first ui-state-default ui-corner-all ui-state-disabled" tabindex="-1" aria-label="First Page"><span class="ui-icon ui-icon-seek-first">F</span></a><a href="#" class="ui-paginator-prev ui-state-default ui-corner-all ui-state-disabled" tabindex="-1" aria-label="Previous Page"><span class="ui-icon ui-icon-seek-prev">P</span></a><span class="ui-paginator-pages"></span><a href="#" class="ui-paginator-next ui-state-default ui-corner-all ui-state-disabled" tabindex="-1" aria-label="Next Page"><span class="ui-icon ui-icon-seek-next">N</span></a><a href="#" class="ui-paginator-last ui-state-default ui-corner-all ui-state-disabled" tabindex="-1" aria-label="Last Page"><span class="ui-icon ui-icon-seek-end">E</span></a><label id="formNotaFiscal:j_idt2119:dtDeducaoSelecionado:j_id44_rppLabel" for="formNotaFiscal:j_idt2119:dtDeducaoSelecionado:j_id44" class="ui-paginator-rpp-label ui-helper-hidden"></label><select id="formNotaFiscal:j_idt2119:dtDeducaoSelecionado:j_id44" name="formNotaFiscal:j_idt2119:dtDeducaoSelecionado_rppDD" aria-labelledby="formNotaFiscal:j_idt2119:dtDeducaoSelecionado:j_id44_rppLabel" class="ui-paginator-rpp-options ui-widget ui-state-default ui-corner-left" autocomplete="off" aria-label="Rows per page"><option value="5" selected="selected">5</option><option value="10">10</option><option value="20">20</option><option value="50">50</option><option value="100">100</option></select></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" data-dismiss="modal" class="btn btn-default">
+                        Fechar
+                    </button><a id="formNotaFiscal:j_idt2119:j_idt2184:commandLink" href="#" class="ui-commandlink ui-widget btn jarch-btn-save btn-sm " onclick=";PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt2119:j_idt2184:commandLink&quot;,f:&quot;formNotaFiscal:j_idt2119&quot;,p:&quot;formNotaFiscal:j_idt2119:j_idt2184:commandLink&quot;,u:&quot;@(.calculo-nota-fiscal),@(.panel-calculo),@(.messageheader)&quot;,onst:function(cfg){;},oner:function(xhr,status,error){;},onco:function(xhr,status,args,data){;}});return false;" style="min-width:100px;">
+        <i class="fa fa-check"></i> Gravar
+        </a>
+                </div>
+            </div>
+        </div>
+</form>
+</div><div id="modalDeducaoParceria" tabindex="-1" role="dialog" aria-hidden="true" class="modal fade hmodal-info in">
+<form id="formNotaFiscal:j_idt2190" name="formNotaFiscal:j_idt2190" method="post" action="/notafiscal/paginas/notafiscal/emissaoNotaFiscalData.jsf" enctype="application/x-www-form-urlencoded">
+<input type="hidden" name="formNotaFiscal:j_idt2190" value="formNotaFiscal:j_idt2190">
+<input type="hidden" name="javax.faces.ViewState" id="j_id1:javax.faces.ViewState:5" value="-1095635306594764140:196538100140560192" autocomplete="off">
+
+        <style type="text/css">
+            tr div .ui-chkbox-all {
+                visibility: hidden;
+            }
+        </style>
+
+        <div class="modal-dialog modal-lg" style="width: 90vw">
+
+
+            <div class="modal-content">
+                <div class="color-line"></div>
+                <div class="modal-header" style="padding: 5px 30px;">
+                    <h4 class="modal-title">
+                        Dedução por Parceria
+                    </h4>
+                    <small class="font-bold">
+                        Informe o parceiro
+                    </small>
+                </div>
+                <div class="modal-body">
+                    <div id="deducaoNotaMaterial" class="row">
+                        <div class="row"><div id="formNotaFiscal:j_idt2190:j_idt2192" class="ui-panelgrid ui-widget" style="width:100%"><div id="formNotaFiscal:j_idt2190:j_idt2192_content" class="ui-panelgrid-content ui-widget-content ui-grid ui-grid-responsive"><div class="ui-g"><div class="ui-panelgrid-cell ui-g-12 ui-md-6">
+                                    <label class="control-label">
+                                        CNPJ Profissional
+                                    </label>
+                                    <div class="input-group"><input id="formNotaFiscal:j_idt2190:j_idt2195:inputTextCnpj:idInputMask" name="formNotaFiscal:j_idt2190:j_idt2195:inputTextCnpj:idInputMask" type="text" placeholder="" onblur="PrimeFaces.bcn(this,event,[function(event){},function(event){PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt2190:j_idt2195:inputTextCnpj:idInputMask&quot;,e:&quot;blur&quot;,f:&quot;formNotaFiscal:j_idt2190&quot;,p:&quot;formNotaFiscal:j_idt2190:j_idt2195:inputTextCnpj:idInputMask&quot;,u:&quot;formNotaFiscal:j_idt2190:j_idt2195:inputTextCnpj:idInputMask&quot;});}])" style="width:140px; " class="ui-inputfield ui-inputmask ui-widget ui-state-default ui-corner-all input-cpf-cnpj" data-p-label="" data-p-rmsg="" data-p-vmsg="???message.cnpjInvalido???" data-p-cmsg="???message.conversaoCnpjInvalido???" inputmode="text">
+                                    </div></div><div class="ui-panelgrid-cell ui-g-12 ui-md-6"><span style="float: right"><a id="formNotaFiscal:j_idt2190:j_idt2199:j_idt2201" href="#" class="ui-commandlink ui-widget btn jarch-btn-search btn-sm " onclick="showMessageProcess(true);PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt2190:j_idt2199:j_idt2201&quot;,f:&quot;formNotaFiscal:j_idt2190&quot;,p:&quot;formNotaFiscal:j_idt2190:j_idt2199:j_idt2201&quot;,u:&quot;@(.dados-deducao)&quot;,onco:function(xhr,status,args,data){hideMessageProcess();}});return false;" style="float:center; min-width:100px;">
+        <i class="fa fa-search"></i>
+        Pesquisar
+    </a></span></div></div></div></div>
+                        </div>
+
+                        <hr>
+
+                        <div class="col-lg-12">
+                            <div class="row"><div id="formNotaFiscal:j_idt2190:j_idt2204" class="ui-datatable ui-widget ui-datatable-scrollable dados-deducao .ui-datatable-hor-scroll" style="width:100%"><div class="ui-widget-header ui-datatable-scrollable-header"><div class="ui-datatable-scrollable-header-box"><table role="grid" style="table-layout:auto;width:100%;"><thead id="formNotaFiscal:j_idt2190:j_idt2204_head"><tr><th id="formNotaFiscal:j_idt2190:j_idt2204:j_idt2206" class="ui-state-default" aria-label="Row Toggler" scope="col" style="width:2rem"><span class="ui-column-title ui-helper-hidden-accessible">Row Toggler</span></th><th id="formNotaFiscal:j_idt2190:j_idt2204:j_idt2208" class="ui-state-default ui-sortable-column" aria-label="Contrato: activate to sort column ascending" scope="col" style="width:10%" tabindex="0" aria-sort="other"><span class="ui-column-title">Contrato</span><span class="ui-sortable-column-icon ui-icon ui-icon-carat-2-n-s"></span><span class="ui-sortable-column-badge ui-helper-hidden"></span></th><th id="formNotaFiscal:j_idt2190:j_idt2204:j_idt2210" class="ui-state-default ui-sortable-column" aria-label="Data Inicio Contrato: activate to sort column ascending" scope="col" style="width:10%" tabindex="0"><span class="ui-column-title">Data Inicio Contrato</span><span class="ui-sortable-column-icon ui-icon ui-icon-carat-2-n-s"></span><span class="ui-sortable-column-badge ui-helper-hidden"></span></th><th id="formNotaFiscal:j_idt2190:j_idt2204:j_idt2212" class="ui-state-default ui-sortable-column" aria-label="CNPJ Profissional: activate to sort column ascending" scope="col" style="width:160px" tabindex="0"><span class="ui-column-title">CNPJ Profissional</span><span class="ui-sortable-column-icon ui-icon ui-icon-carat-2-n-s"></span><span class="ui-sortable-column-badge ui-helper-hidden"></span></th><th id="formNotaFiscal:j_idt2190:j_idt2204:j_idt2214" class="ui-state-default ui-sortable-column" aria-label="Inscrição Municipal Profissional: activate to sort column ascending" scope="col" style="text-align:center" tabindex="0"><span class="ui-column-title">Inscrição Municipal Profissional</span><span class="ui-sortable-column-icon ui-icon ui-icon-carat-2-n-s"></span><span class="ui-sortable-column-badge ui-helper-hidden"></span></th><th id="formNotaFiscal:j_idt2190:j_idt2204:j_idt2216" class="ui-state-default ui-sortable-column" aria-label="Nome/Nome Empresarial Profissional: activate to sort column ascending" scope="col" style="width:40%" tabindex="0"><span class="ui-column-title">Nome/Nome Empresarial Profissional</span><span class="ui-sortable-column-icon ui-icon ui-icon-carat-2-n-s"></span><span class="ui-sortable-column-badge ui-helper-hidden"></span></th></tr></thead></table></div></div><div class="ui-datatable-scrollable-body" tabindex="-1" style="max-height:400px"><table role="grid" style="table-layout:auto;width:100%;"><tbody id="formNotaFiscal:j_idt2190:j_idt2204_data" class="ui-datatable-data ui-widget-content"><tr class="ui-widget-content ui-datatable-empty-message"><td colspan="6">Registro não encontrado</td></tr></tbody></table></div><div class="ui-widget-header ui-datatable-scrollable-footer"><div class="ui-datatable-scrollable-footer-box"><table role="grid" style="table-layout:auto;width:100%;"></table></div></div><div id="formNotaFiscal:j_idt2190:j_idt2204_paginator_bottom" class="ui-paginator ui-paginator-bottom ui-widget-header ui-corner-bottom" role="navigation"><span class="ui-paginator-current">1/1</span><a href="#" class="ui-paginator-first ui-state-default ui-corner-all ui-state-disabled" tabindex="-1" aria-label="First Page"><span class="ui-icon ui-icon-seek-first">F</span></a><a href="#" class="ui-paginator-prev ui-state-default ui-corner-all ui-state-disabled" tabindex="-1" aria-label="Previous Page"><span class="ui-icon ui-icon-seek-prev">P</span></a><span class="ui-paginator-pages"></span><a href="#" class="ui-paginator-next ui-state-default ui-corner-all ui-state-disabled" tabindex="-1" aria-label="Next Page"><span class="ui-icon ui-icon-seek-next">N</span></a><a href="#" class="ui-paginator-last ui-state-default ui-corner-all ui-state-disabled" tabindex="-1" aria-label="Last Page"><span class="ui-icon ui-icon-seek-end">E</span></a><label id="formNotaFiscal:j_idt2190:j_idt2204:j_id45_rppLabel" for="formNotaFiscal:j_idt2190:j_idt2204:j_id45" class="ui-paginator-rpp-label ui-helper-hidden"></label><select id="formNotaFiscal:j_idt2190:j_idt2204:j_id45" name="formNotaFiscal:j_idt2190:j_idt2204_rppDD" aria-labelledby="formNotaFiscal:j_idt2190:j_idt2204:j_id45_rppLabel" class="ui-paginator-rpp-options ui-widget ui-state-default ui-corner-left" autocomplete="off" aria-label="Rows per page"><option value="5" selected="selected">5</option><option value="10">10</option><option value="20">20</option><option value="50">50</option><option value="100">100</option></select></div><input id="formNotaFiscal:j_idt2190:j_idt2204_scrollState" name="formNotaFiscal:j_idt2190:j_idt2204_scrollState" type="hidden" autocomplete="off" value="0,0"><input id="formNotaFiscal:j_idt2190:j_idt2204_rowExpansionState" name="formNotaFiscal:j_idt2190:j_idt2204_rowExpansionState" type="hidden" autocomplete="off"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" data-dismiss="modal" class="btn btn-default">
+                        Fechar
+                    </button><a id="formNotaFiscal:j_idt2190:j_idt2232:commandLink" href="#" class="ui-commandlink ui-widget btn jarch-btn-save btn-sm " onclick=";PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt2190:j_idt2232:commandLink&quot;,f:&quot;formNotaFiscal:j_idt2190&quot;,p:&quot;formNotaFiscal:j_idt2190:j_idt2232:commandLink&quot;,u:&quot;@(.calculo-nota-fiscal),@(.panel-calculo),@(.messageheader)&quot;,onst:function(cfg){;},oner:function(xhr,status,error){;},onco:function(xhr,status,args,data){;}});return false;" style="min-width:100px;">
+        <i class="fa fa-check"></i> Gravar
+        </a><svg xmlns="http://www.w3.org/2000/svg" id="formNotaFiscal:j_idt2190:j_idt2235" width="30px" height="1"></svg>
+                </div>
+            </div>
+        </div>
+</form>
+</div><div class="modal fade hmodal-info" id="modalDeducaoPublicidadePropaganda" tabindex="-1" role="dialog" aria-hidden="true" style="display: none;">
+<form id="formNotaFiscal:j_idt2239" name="formNotaFiscal:j_idt2239" method="post" action="/notafiscal/paginas/notafiscal/emissaoNotaFiscalData.jsf" enctype="application/x-www-form-urlencoded" data-an-count="1" data-an-form-handler="nddh5">
+<input type="hidden" name="formNotaFiscal:j_idt2239" value="formNotaFiscal:j_idt2239">
+<input type="hidden" name="javax.faces.ViewState" id="j_id1:javax.faces.ViewState:6" value="-1095635306594764140:196538100140560192" autocomplete="off">
+
+
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="color-line"></div>
+                <div class="modal-header" style="padding: 5px 30px;">
+                    <h4 class="modal-title">
+                        Notas de Serviços
+                    </h4>
+                    <small class="font-bold">
+                        Selecione as notas para dedução
+                    </small>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-lg-12">
+                            
+                            <div class="row dados-subempreitada">
+                                <div class="pull-right"><a id="formNotaFiscal:j_idt2239:j_idt2241:j_idt2243" href="#" class="ui-commandlink ui-widget btn jarch-btn-search btn-sm " onclick="showMessageProcess(true);PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt2239:j_idt2241:j_idt2243&quot;,f:&quot;formNotaFiscal:j_idt2239&quot;,p:&quot;formNotaFiscal:j_idt2239:j_idt2241:j_idt2243&quot;,u:&quot;@(.dados-deducao)&quot;,onco:function(xhr,status,args,data){hideMessageProcess();}});return false;" style="float:center; min-width:100px;">
+        <i class="fa fa-search"></i>
+        Pesquisar
+    </a>
+                                </div>
+                                <div class="row"></div>
+                                <br><div id="formNotaFiscal:j_idt2239:dtNotasServico" class="ui-datatable ui-widget ui-datatable-scrollable dados-deducao .ui-datatable-hor-scroll" style="width:100%"><div class="ui-widget-header ui-datatable-scrollable-header"><div class="ui-datatable-scrollable-header-box"><table role="grid"><thead id="formNotaFiscal:j_idt2239:dtNotasServico_head"><tr><th id="formNotaFiscal:j_idt2239:dtNotasServico:j_idt2246" class="ui-state-default ui-selection-column" scope="col" style="width:40px;text-align:center"><span class="ui-column-title"></span><div class="ui-chkbox ui-chkbox-all ui-widget"><div id="formNotaFiscal:j_idt2239:dtNotasServico_head_checkbox" role="checkbox" tabindex="0" aria-checked="false" class="ui-chkbox-box ui-widget ui-corner-all ui-state-default ui-state-disabled" aria-label="All items unselected"><span class="ui-chkbox-icon ui-icon ui-icon-blank ui-c"></span></div></div></th><th id="formNotaFiscal:j_idt2239:dtNotasServico:j_idt2247" class="ui-state-default" aria-label="Competência" scope="col" style="width:100px; text-align:center"><span class="ui-column-title">Competência</span></th><th id="formNotaFiscal:j_idt2239:dtNotasServico:j_idt2249" class="ui-state-default" aria-label="Número da Nota" scope="col" style="width:125px; text-align:center"><span class="ui-column-title">Número da Nota</span></th><th id="formNotaFiscal:j_idt2239:dtNotasServico:j_idt2251" class="ui-state-default" aria-label="Nome/Nome Empresarial" scope="col"><span class="ui-column-title">Nome/Nome Empresarial</span></th><th id="formNotaFiscal:j_idt2239:dtNotasServico:j_idt2253" class="ui-state-default" aria-label="Valor Serviço" scope="col" style="width:100px; text-align:right"><span class="ui-column-title">Valor Serviço</span></th></tr></thead></table></div></div><div class="ui-datatable-scrollable-body" tabindex="-1" style="max-height:400px"><table role="grid"><tbody id="formNotaFiscal:j_idt2239:dtNotasServico_data" class="ui-datatable-data ui-widget-content" tabindex="0"><tr class="ui-widget-content ui-datatable-empty-message"><td colspan="5">Registro não encontrado</td></tr></tbody></table></div><div class="ui-widget-header ui-datatable-scrollable-footer"><div class="ui-datatable-scrollable-footer-box"><table role="grid"></table></div></div><div id="formNotaFiscal:j_idt2239:dtNotasServico_paginator_bottom" class="ui-paginator ui-paginator-bottom ui-widget-header ui-corner-bottom" role="navigation"><span class="ui-paginator-current">1/1</span><a href="#" class="ui-paginator-first ui-state-default ui-corner-all ui-state-disabled" tabindex="-1" aria-label="First Page"><span class="ui-icon ui-icon-seek-first">F</span></a><a href="#" class="ui-paginator-prev ui-state-default ui-corner-all ui-state-disabled" tabindex="-1" aria-label="Previous Page"><span class="ui-icon ui-icon-seek-prev">P</span></a><span class="ui-paginator-pages"></span><a href="#" class="ui-paginator-next ui-state-default ui-corner-all ui-state-disabled" tabindex="-1" aria-label="Next Page"><span class="ui-icon ui-icon-seek-next">N</span></a><a href="#" class="ui-paginator-last ui-state-default ui-corner-all ui-state-disabled" tabindex="-1" aria-label="Last Page"><span class="ui-icon ui-icon-seek-end">E</span></a><label id="formNotaFiscal:j_idt2239:dtNotasServico:j_id46_rppLabel" for="formNotaFiscal:j_idt2239:dtNotasServico:j_id46" class="ui-paginator-rpp-label ui-helper-hidden"></label><select id="formNotaFiscal:j_idt2239:dtNotasServico:j_id46" name="formNotaFiscal:j_idt2239:dtNotasServico_rppDD" aria-labelledby="formNotaFiscal:j_idt2239:dtNotasServico:j_id46_rppLabel" class="ui-paginator-rpp-options ui-widget ui-state-default ui-corner-left" autocomplete="off" aria-label="Rows per page"><option value="10" selected="selected">10</option><option value="20">20</option><option value="50">50</option><option value="100">100</option></select></div><input id="formNotaFiscal:j_idt2239:dtNotasServico_selection" name="formNotaFiscal:j_idt2239:dtNotasServico_selection" type="hidden" autocomplete="off" value=""><input id="formNotaFiscal:j_idt2239:dtNotasServico_scrollState" name="formNotaFiscal:j_idt2239:dtNotasServico_scrollState" type="hidden" autocomplete="off" value="0,0"></div><span id="formNotaFiscal:j_idt2239:pgTotalizador" class="totalizador pull-right">Valor Dedução
+                                    <br><span id="formNotaFiscal:j_idt2239:j_idt2257" class="ui-inputnumber ui-widget totalizador"><input id="formNotaFiscal:j_idt2239:j_idt2257_input" name="formNotaFiscal:j_idt2239:j_idt2257_input" type="text" autocomplete="off" value="" class="ui-inputfield ui-inputtext ui-widget ui-state-default ui-corner-all ui-state-disabled" disabled="disabled" inputmode="decimal" data-p-con="javax.faces.BigDecimal" data-p-hl="inputnumber"><input id="formNotaFiscal:j_idt2239:j_idt2257_hinput" name="formNotaFiscal:j_idt2239:j_idt2257_hinput" type="hidden" autocomplete="off" value="" data-p-con="javax.faces.BigDecimal" data-p-hl="inputnumber" disabled="disabled"></span></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">
+                        Fechar
+                    </button><a id="formNotaFiscal:j_idt2239:j_idt2259:commandLink" href="#" class="ui-commandlink ui-widget btn jarch-btn-save btn-sm " onclick=";PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt2239:j_idt2259:commandLink&quot;,f:&quot;formNotaFiscal:j_idt2239&quot;,p:&quot;formNotaFiscal:j_idt2239:j_idt2259:commandLink&quot;,u:&quot;@(.calculo-nota-fiscal),@(.panel-calculo),@(.messageheader)&quot;,onst:function(cfg){;},oner:function(xhr,status,error){;},onco:function(xhr,status,args,data){;}});return false;" style="min-width:100px;">
+        <i class="fa fa-check"></i> Gravar
+        </a>
+                </div>
+            </div>
+        </div>
+</form>
+</div><div class="modal fade hmodal-info" id="modalDeducaoSubempreitada" tabindex="-1" role="dialog" aria-hidden="true" style="display: none;">
+<form id="formNotaFiscal:j_idt2265" name="formNotaFiscal:j_idt2265" method="post" action="/notafiscal/paginas/notafiscal/emissaoNotaFiscalData.jsf" enctype="application/x-www-form-urlencoded" data-an-count="1" data-an-form-handler="xw5sb">
+<input type="hidden" name="formNotaFiscal:j_idt2265" value="formNotaFiscal:j_idt2265">
+<input type="hidden" name="javax.faces.ViewState" id="j_id1:javax.faces.ViewState:7" value="-1095635306594764140:196538100140560192" autocomplete="off">
+
+
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="color-line"></div>
+                <div class="modal-header" style="padding: 5px 30px;">
+                    <h4 class="modal-title">
+                        Subempreitada
+                    </h4>
+                    <small class="font-bold">
+                        Informe as notas para dedução
+                    </small>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-lg-12">
+                            
+                            <div class="row dados-subempreitada">
+                                <div class="pull-right"><a id="formNotaFiscal:j_idt2265:j_idt2267" href="#" class="ui-commandlink ui-widget btn btn-sm btn-info" onclick="PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt2265:j_idt2267&quot;,f:&quot;formNotaFiscal:j_idt2265&quot;,p:&quot;formNotaFiscal:j_idt2265:j_idt2267&quot;,u:&quot;@(.dados-subempreitada)&quot;});return false;">
+                                        Adicionar nota
+                                    </a>
+                                </div>
+                                <div class="row"></div>
+                                <br><div id="formNotaFiscal:j_idt2265:j_idt2270" class="ui-datatable ui-widget dados-subempreitada" style="width:100%"><div class="ui-datatable-tablewrapper"><table role="grid"><thead id="formNotaFiscal:j_idt2265:j_idt2270_head"><tr><th id="formNotaFiscal:j_idt2265:j_idt2270:j_idt2271" class="ui-state-default" aria-label="Excluir" scope="col" style="text-align:center;width:60px"><span class="ui-column-title">Excluir</span></th><th id="formNotaFiscal:j_idt2265:j_idt2270:j_idt2274" class="ui-state-default ui-sortable-column" aria-label="CPF/CNPJ Fornecedor: activate to sort column ascending" scope="col" style="width:25%" tabindex="0" aria-sort="other"><span class="ui-column-title">CPF/CNPJ Fornecedor</span><span class="ui-sortable-column-icon ui-icon ui-icon-carat-2-n-s"></span><span class="ui-sortable-column-badge ui-helper-hidden"></span></th><th id="formNotaFiscal:j_idt2265:j_idt2270:j_idt2278" class="ui-state-default ui-sortable-column" aria-label="Número da Nota: activate to sort column ascending" scope="col" style="width:17%" tabindex="0"><span class="ui-column-title">Número da Nota</span><span class="ui-sortable-column-icon ui-icon ui-icon-carat-2-n-s"></span><span class="ui-sortable-column-badge ui-helper-hidden"></span></th><th id="formNotaFiscal:j_idt2265:j_idt2270:j_idt2283" class="ui-state-default ui-sortable-column" aria-label="Valor Nota: activate to sort column ascending" scope="col" style="width:110px; text-align:right" tabindex="0"><span class="ui-column-title">Valor Nota</span><span class="ui-sortable-column-icon ui-icon ui-icon-carat-2-n-s"></span><span class="ui-sortable-column-badge ui-helper-hidden"></span></th><th id="formNotaFiscal:j_idt2265:j_idt2270:j_idt2286" class="ui-state-default ui-sortable-column" aria-label="Saldo Dedução: activate to sort column ascending" scope="col" style="width:130px; text-align:right" tabindex="0"><span class="ui-column-title">Saldo Dedução</span><span class="ui-sortable-column-icon ui-icon ui-icon-carat-2-n-s"></span><span class="ui-sortable-column-badge ui-helper-hidden"></span></th></tr></thead><tbody id="formNotaFiscal:j_idt2265:j_idt2270_data" class="ui-datatable-data ui-widget-content"><tr data-ri="0" class="ui-widget-content ui-datatable-even"><td role="gridcell" style="text-align:center"><a id="formNotaFiscal:j_idt2265:j_idt2270:0:j_idt2272" href="#" class="ui-commandlink ui-widget" onclick="PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt2265:j_idt2270:0:j_idt2272&quot;,f:&quot;formNotaFiscal:j_idt2265&quot;,p:&quot;formNotaFiscal:j_idt2265:j_idt2270:0:j_idt2272&quot;,u:&quot;@(.dados-subempreitada)&quot;});return false;">
+                                            <i class="fa fa-trash"></i></a></td><td role="gridcell" style="width:25%">
+    <div id="formNotaFiscal:j_idt2265:j_idt2270:0:j_idt2275:idInputMaskCpfCnpj" class="jarch-inputtext"><input id="formNotaFiscal:j_idt2265:j_idt2270:0:j_idt2275:idInputMaskCpfCnpj:inputText" name="formNotaFiscal:j_idt2265:j_idt2270:0:j_idt2275:idInputMaskCpfCnpj:inputText" type="text" style="width:140px; " class="ui-inputfield ui-inputtext ui-widget ui-state-default ui-corner-all input-cpf-cnpj" maxlength="18" placeholder="" size="0" onkeypress="formatCpfCnpjAlfanumerico(this, cpfCnpjAlfanumerico)" onkeyup="formatCpfCnpjAlfanumerico(this, cpfCnpjAlfanumerico)" onblur="PrimeFaces.bcn(this,event,[function(event){ajustaTamanhoCpfCnpjAlfanumerico(this, tamanhoCpfCnpjAlfanumerico)},function(event){PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt2265:j_idt2270:0:j_idt2275:idInputMaskCpfCnpj:inputText&quot;,e:&quot;blur&quot;,f:&quot;formNotaFiscal:j_idt2265&quot;,p:&quot;formNotaFiscal:j_idt2265&quot;,u:&quot;@(.dados-subempreitada)&quot;});}])" data-p-label="" data-p-rmsg="" data-p-vmsg="CPF/CNPJ inválido" data-p-cmsg="Conversão CPF/CNPJ inválido">
+    </div></td><td role="gridcell" style="width:17%">
+    <div id="formNotaFiscal:j_idt2265:j_idt2270:0:j_idt2279"><span id="formNotaFiscal:j_idt2265:j_idt2270:0:j_idt2279:idInteiro" class="ui-inputnumber ui-widget input-number"><input id="formNotaFiscal:j_idt2265:j_idt2270:0:j_idt2279:idInteiro_input" name="formNotaFiscal:j_idt2265:j_idt2270:0:j_idt2279:idInteiro_input" type="text" autocomplete="off" value="" style="text-align:right; width: 100%; " class="ui-inputfield ui-inputtext ui-widget ui-state-default ui-corner-all" inputmode="numeric" onchange="PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt2265:j_idt2270:0:j_idt2279:idInteiro&quot;,e:&quot;change&quot;,f:&quot;formNotaFiscal:j_idt2265&quot;,p:&quot;formNotaFiscal:j_idt2265&quot;,u:&quot;@(.dados-subempreitada)&quot;});" data-p-label="" data-p-rmsg="" data-p-cmsg=": Número inválido" data-p-con="javax.faces.Long" data-p-hl="inputnumber"><input id="formNotaFiscal:j_idt2265:j_idt2270:0:j_idt2279:idInteiro_hinput" name="formNotaFiscal:j_idt2265:j_idt2270:0:j_idt2279:idInteiro_hinput" type="hidden" autocomplete="off" value="" data-p-label="" data-p-rmsg="" data-p-cmsg=": Número inválido" data-p-con="javax.faces.Long" data-p-hl="inputnumber"></span>
+    </div></td><td role="gridcell" style="width:110px; text-align:right"></td><td role="gridcell" style="width:130px; text-align:right"></td></tr></tbody><tfoot id="formNotaFiscal:j_idt2265:j_idt2270_foot"><tr><td class="ui-state-default" style="text-align:center"></td><td class="ui-state-default" style="width:25%"></td><td class="ui-state-default" style="width:17%"></td><td class="ui-state-default" style="width:110px; text-align:right"></td><td class="ui-state-default" style="width:130px; text-align:right"></td></tr></tfoot></table></div><div id="formNotaFiscal:j_idt2265:j_idt2270_paginator_bottom" class="ui-paginator ui-paginator-bottom ui-widget-header ui-corner-bottom" role="navigation"><span class="ui-paginator-current">1/1</span><a href="#" class="ui-paginator-first ui-state-default ui-corner-all ui-state-disabled" tabindex="-1" aria-label="First Page"><span class="ui-icon ui-icon-seek-first">F</span></a><a href="#" class="ui-paginator-prev ui-state-default ui-corner-all ui-state-disabled" tabindex="-1" aria-label="Previous Page"><span class="ui-icon ui-icon-seek-prev">P</span></a><span class="ui-paginator-pages"><a class="ui-paginator-page ui-state-default ui-state-active ui-corner-all" tabindex="0" href="#" aria-label="Page 1" aria-current="page">1</a></span><a href="#" class="ui-paginator-next ui-state-default ui-corner-all ui-state-disabled" tabindex="-1" aria-label="Next Page"><span class="ui-icon ui-icon-seek-next">N</span></a><a href="#" class="ui-paginator-last ui-state-default ui-corner-all ui-state-disabled" tabindex="-1" aria-label="Last Page"><span class="ui-icon ui-icon-seek-end">E</span></a><label id="formNotaFiscal:j_idt2265:j_idt2270:j_id47_rppLabel" for="formNotaFiscal:j_idt2265:j_idt2270:j_id47" class="ui-paginator-rpp-label ui-helper-hidden"></label><select id="formNotaFiscal:j_idt2265:j_idt2270:j_id47" name="formNotaFiscal:j_idt2265:j_idt2270_rppDD" aria-labelledby="formNotaFiscal:j_idt2265:j_idt2270:j_id47_rppLabel" class="ui-paginator-rpp-options ui-widget ui-state-default ui-corner-left" autocomplete="off" aria-label="Rows per page"><option value="5" selected="selected">5</option><option value="10">10</option><option value="20">20</option><option value="50">50</option><option value="100">100</option></select></div></div>
+
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+                            </div>
+                        </div>
+
+
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">
+                        Fechar
+                    </button><a id="formNotaFiscal:j_idt2265:j_idt2290:commandLink" href="#" class="ui-commandlink ui-widget btn jarch-btn-save btn-sm " onclick=";PrimeFaces.ab({s:&quot;formNotaFiscal:j_idt2265:j_idt2290:commandLink&quot;,f:&quot;formNotaFiscal:j_idt2265&quot;,p:&quot;formNotaFiscal:j_idt2265:j_idt2290:commandLink&quot;,u:&quot;@(.calculo-nota-fiscal),@(.panel-calculo),@(.messageheader)&quot;,onst:function(cfg){;},oner:function(xhr,status,error){;},onco:function(xhr,status,args,data){;}});return false;" style="min-width:100px;">
+        <i class="fa fa-check"></i> Gravar
+        </a>
+                </div>
+            </div>
+        </div>
+</form>
+</div><div id="j_idt2505:ldConfiguracaoEmpresaDescricaoFavorito:j_idt2509:tabViewFilterSearch:j_idt2524_panel" class="ui-selectonemenu-panel ui-widget ui-widget-content ui-corner-all ui-helper-hidden ui-shadow ui-input-overlay" tabindex="-1" style="position: fixed;"><div class="ui-selectonemenu-items-wrapper" style="max-height:200px"></div></div><div class="swal-overlay" tabindex="-1">
+  <div class="swal-modal jarch-messageprocess" role="dialog" aria-modal="true"><div class="swal-icon swal-icon--custom"><img src="https://novanfse.campinas.sp.gov.br/notafiscal/resources/images/svg/spin.svg"></div><div class="swal-title" style="">Processando...</div><div class="swal-text" style="">Aguarde Término do Processamento</div></div></div><span id="formNotaFiscal:ddnotaFiscalPessoa_panel" class="ui-autocomplete-panel ui-widget-content ui-corner-all ui-helper-hidden ui-shadow ui-input-overlay" tabindex="-1"></span><div id="toast-container" class="toast-top-full-width" aria-live="polite" role="alert"><div class="toast toast-success" style=""><div class="toast-progress"></div><button type="button" class="toast-close-button" role="button">×</button><div class="toast-message"><p>A nota fiscal foi clonada com sucesso. Todas as informações foram replicadas, exceto os valores de dedução que, se aplicáveis, devem ser preenchidos manualmente.</p></div></div></div></body></html>

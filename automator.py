@@ -1902,16 +1902,75 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
                 if cloned:
                     await log_progress("Aguardando a tela da nota clonada carregar...", "running", client_id)
                     try:
-                        await find_description_field(page, timeout_ms=30000)
-                    except Exception as e:
+                        # Wait up to 8 seconds to see if description field is already visible (already unlocked)
+                        await find_description_field(page, timeout_ms=8000)
+                    except Exception:
+                        # If description is not loaded, search for Tomador by CNPJ to unlock the form
+                        await log_progress("Campos de serviço não carregados automaticamente após clonagem. Efetuando pesquisa do Tomador para desbloquear...", "warning", client_id)
+                        
+                        # Fill CNPJ/CPF of tomador
+                        cnpj_field_sel = 'xpath=//input[contains(@id, "CpfCnpj") or contains(@name, "CpfCnpj")]'
+                        cnpj_field = await first_visible_locator(page, cnpj_field_sel, timeout_ms=10000, require_enabled=True)
+                        await cnpj_field.click()
+                        await page.keyboard.press("Control+A")
+                        await page.keyboard.press("Backspace")
+                        await cnpj_field.press_sequentially(client_cnpj, delay=100)
+                        await page.wait_for_timeout(500)
+                        await cnpj_field.press("Tab")
+                        
+                        await page.evaluate("""
+                            (el) => {
+                                if (el) {
+                                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                                    el.dispatchEvent(new Event('blur', { bubbles: true }));
+                                }
+                            }
+                        """, cnpj_field)
+                        await page.wait_for_timeout(1000)
+                        
+                        # Click the "Pesquisar" button next to CNPJ field
+                        await log_progress("Acionando botão de pesquisa do Tomador...", "running", client_id)
+                        search_selectors = [
+                            "xpath=//*[self::button or self::a][contains(@id, 'pesquisar') or contains(@id, 'Pesquisar') or contains(., 'Pesquisar')]",
+                            "xpath=//*[contains(@id, 'tomador') or contains(@class, 'tomador') or contains(., 'Tomador')]//*[self::button or self::a][contains(., 'Pesquisar') or contains(., 'Pesq')]",
+                            "xpath=//*[self::button or self::a][contains(., 'Pesquisar')]",
+                            "xpath=//*[self::button or self::a][contains(., 'Pesq')]"
+                        ]
+                        clicked_search = False
+                        for sel in search_selectors:
+                            try:
+                                loc = page.locator(sel)
+                                if await loc.count() > 0:
+                                    for index in range(await loc.count()):
+                                        item = loc.nth(index)
+                                        if await item.is_visible():
+                                            btn_text = (await item.inner_text()).strip()
+                                            if btn_text.lower() == "menu":
+                                                continue
+                                            await log_progress(f"Clicando no botão de pesquisa do Tomador: '{btn_text}'", "running", client_id)
+                                            await item.click()
+                                            clicked_search = True
+                                            break
+                                    if clicked_search:
+                                        break
+                            except Exception:
+                                pass
+                        
+                        await page.wait_for_timeout(3000)
+                        
+                        # Wait for description field again
                         try:
-                            dom = await page.content()
-                            with open("C:/Projetos/campinas-nfse-automator/campinas_dom.html", "w", encoding="utf-8") as f:
-                                f.write(dom)
-                            print("[CAMPINAS INFO] DOM da tela de emissão salvo em campinas_dom.html!")
-                        except Exception as dom_exc:
-                            print(f"[CAMPINAS WARNING] Falha ao salvar DOM da página: {dom_exc}")
-                        raise e
+                            await find_description_field(page, timeout_ms=30000)
+                        except Exception as e:
+                            try:
+                                dom = await page.content()
+                                with open("C:/Projetos/campinas-nfse-automator/campinas_dom.html", "w", encoding="utf-8") as f:
+                                    f.write(dom)
+                                print("[CAMPINAS INFO] DOM da tela de emissão salvo em campinas_dom.html!")
+                            except Exception as dom_exc:
+                                print(f"[CAMPINAS WARNING] Falha ao salvar DOM da página: {dom_exc}")
+                            raise e
                 desc_field = await fill_description(page, desc_text, timeout_ms=30000)
                 await desc_field.press("Tab")
                 await page.wait_for_timeout(1000)
