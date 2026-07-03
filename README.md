@@ -53,29 +53,29 @@ playwright install chromium
 ```
 
 ### 4. Configurar senha do webmail
-A senha do webmail nunca deve ser salva no código. Exporte a variável antes de iniciar o servidor:
-```bash
-export WEBMAIL_PASSWORD='sua-senha-do-webmail'
-```
+A senha do webmail do Specchio pode ser configurada de duas formas:
+1. **Pela Interface Gráfica (Recomendado):** Acesse a aba **Configurações** no painel do sistema e informe a senha no campo **"Senha do Webmail (Specchio)"**. Ela será salva com segurança no banco de dados local.
+2. **Via Variável de Ambiente (Fallback):** Defina a variável `WEBMAIL_PASSWORD` no terminal antes de rodar o servidor:
+   ```bash
+   set WEBMAIL_PASSWORD="sua-senha-do-webmail"
+   ```
 
-O login usado pelo módulo é `luiz.rocha@compunettecnologia.com.br` e o remetente obrigatório validado antes do envio é `financeiro@specchio.info`.
+O login padrão utilizado é `luiz.rocha@compunettecnologia.com.br` e o e-mail de envio é `financeiro@specchio.info`.
 
 ---
 
 ## 💻 Como Executar
 
-1. Navegue até o diretório do projeto:
-   ```bash
-   cd /home/lrocha/projetos/campinas-nfse-automator
-   ```
+No Windows, basta dar dois cliques no executável de lote **`start_app.bat`** na raiz do projeto. Ele detectará a instalação do Python e iniciará o servidor automaticamente.
 
-2. Execute o servidor de desenvolvimento:
+Para iniciar manualmente:
+1. Navegue até o diretório do projeto.
+2. Inicie o servidor:
    ```bash
-   python3 -m uvicorn main:app --reload
+   python run_server.py
    ```
-
-3. Acesse o painel de controle pelo seu navegador de preferência no endereço:
-   👉 **[http://127.0.0.1:8000](http://127.0.0.1:8000)**
+3. O painel abrirá automaticamente no seu navegador padrão no endereço:
+   👉 **[http://127.0.0.1:8001](http://127.0.0.1:8001)**
 
 ---
 
