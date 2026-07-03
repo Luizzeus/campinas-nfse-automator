@@ -1901,7 +1901,17 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
                 # kept from the reference note and must not be changed.
                 if cloned:
                     await log_progress("Aguardando a tela da nota clonada carregar...", "running", client_id)
-                    await find_description_field(page, timeout_ms=90000)
+                    try:
+                        await find_description_field(page, timeout_ms=30000)
+                    except Exception as e:
+                        try:
+                            dom = await page.content()
+                            with open("C:/Projetos/campinas-nfse-automator/campinas_dom.html", "w", encoding="utf-8") as f:
+                                f.write(dom)
+                            print("[CAMPINAS INFO] DOM da tela de emissão salvo em campinas_dom.html!")
+                        except Exception as dom_exc:
+                            print(f"[CAMPINAS WARNING] Falha ao salvar DOM da página: {dom_exc}")
+                        raise e
                 desc_field = await fill_description(page, desc_text, timeout_ms=30000)
                 await desc_field.press("Tab")
                 await page.wait_for_timeout(1000)
