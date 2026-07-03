@@ -222,25 +222,42 @@ async def find_first_visible_in_contexts(contexts, selectors, timeout_ms=10000):
     raise RuntimeError(f"Nenhum seletor visível encontrado: {selectors}. Último erro: {last_error}")
 
 async def select_payer_from_list(page, context, frame, cnpj_cpf, client_name, bradesco_payer_name=None):
-    payer_name = bradesco_payer_name or client_name
-    # Log progress internally (using standard print or log callback wrapper if accessible, or print directly)
-    print(f"[BRADESCO INFO] Digitando nome do pagador diretamente no campo: {payer_name}")
-    
-    pagador_locator = frame.locator("id=frm:txtPagador").first
-    await pagador_locator.fill(payer_name)
-    await page.wait_for_timeout(1000)
-    
-    # Try arrow down and enter in case of autocomplete popup, then tab
+    lista_pagadores_sel = "id=frm:linkListaPagadores"
+    popup = None
+    href = None
     try:
-        await pagador_locator.press("ArrowDown")
-        await page.wait_for_timeout(500)
-        await pagador_locator.press("Enter")
-        await page.wait_for_timeout(500)
+        href = await frame.locator(lista_pagadores_sel).first.get_attribute("href")
     except Exception:
-        pass
+        href = None
+
+    try:
+        async with context.expect_page(timeout=10000) as page_info:
+            await click_element(frame, lista_pagadores_sel)
+        popup = await page_info.value
+    except Exception:
+        if len(context.pages) > 1:
+            popup = context.pages[-1]
+
+    if popup == page:
+        popup = None
+    if not popup and href:
+        popup = await context.new_page()
+        await popup.goto(urljoin(frame.url, href), timeout=30000)
+
+    target_page = popup if popup else page
+    await target_page.bring_to_front()
+    await target_page.wait_for_timeout(3000)
+
+    # Dump popup DOM for debugging
+    try:
+        popup_html = await target_page.content()
+        with open("C:/Projetos/campinas-nfse-automator/popup_dom.html", "w", encoding="utf-8") as f:
+            f.write(popup_html)
+        print("[BRADESCO INFO] DOM do popup salvo com sucesso em popup_dom.html!")
+    except Exception as e:
+        print(f"[BRADESCO WARNING] Erro ao salvar DOM do popup: {e}")
         
-    await pagador_locator.press("Tab")
-    await page.wait_for_timeout(2000)
+    raise RuntimeError("DOM do popup salvo! Parando para análise de seletores.")
 
 
 
