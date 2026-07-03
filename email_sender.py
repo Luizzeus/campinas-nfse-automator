@@ -523,7 +523,19 @@ async def run_billing_email_automation(competence, client_ids=None, only_errors=
 
     password = os.environ.get(WEBMAIL_PASSWORD_ENV)
     if not password:
-        message = f"Variável de ambiente {WEBMAIL_PASSWORD_ENV} não configurada"
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT value FROM system_config WHERE key = 'webmail_password'")
+            row = cursor.fetchone()
+            if row:
+                password = row["value"]
+            conn.close()
+        except Exception as db_exc:
+            print(f"[ERROR] Failed to query webmail_password from db: {db_exc}")
+
+    if not password:
+        message = "Senha do Webmail não configurada no sistema (ou na variável de ambiente WEBMAIL_PASSWORD)"
         for item in items:
             upsert_email_send(item, "erro", error_message=message, failed_step="credenciais")
         await log_progress(message, "error")

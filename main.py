@@ -60,6 +60,7 @@ class ConfigModel(BaseModel):
     portal_password: str
     bradesco_user: str
     bradesco_password: str
+    webmail_password: Optional[str] = ""
     headless: bool
 
 class RunPayload(BaseModel):
@@ -180,6 +181,7 @@ def get_config():
         "portal_password": config.get("portal_password", ""),
         "bradesco_user": config.get("bradesco_user", ""),
         "bradesco_password": config.get("bradesco_password", ""),
+        "webmail_password": config.get("webmail_password", ""),
         "headless": config.get("headless", "false").lower() == "true"
     }
 
@@ -193,6 +195,7 @@ def save_config(config: ConfigModel):
         ("portal_password", config.portal_password),
         ("bradesco_user", config.bradesco_user),
         ("bradesco_password", config.bradesco_password),
+        ("webmail_password", config.webmail_password),
         ("headless", str(config.headless).lower())
     ]:
         cursor.execute("""

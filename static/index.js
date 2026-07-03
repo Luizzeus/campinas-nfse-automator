@@ -54,6 +54,7 @@ const configCnpj = document.getElementById('config-cnpj');
 const configPassword = document.getElementById('config-password');
 const configBradescoUser = document.getElementById('config-bradesco-user');
 const configBradescoPassword = document.getElementById('config-bradesco-password');
+const configWebmailPassword = document.getElementById('config-webmail-password');
 const configHeadless = document.getElementById('config-headless');
 
 // Modal Elements
@@ -423,6 +424,7 @@ async function loadConfig() {
         configPassword.value = config.portal_password;
         configBradescoUser.value = config.bradesco_user || '';
         configBradescoPassword.value = config.bradesco_password || '';
+        configWebmailPassword.value = config.webmail_password || '';
         configHeadless.checked = config.headless;
     } catch (e) {
         console.error("Error loading config:", e);
@@ -438,6 +440,7 @@ configForm.addEventListener('submit', async (e) => {
         portal_password: configPassword.value,
         bradesco_user: configBradescoUser.value,
         bradesco_password: configBradescoPassword.value,
+        webmail_password: configWebmailPassword.value,
         headless: configHeadless.checked
     };
     
