@@ -1931,31 +1931,39 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
                         
                         # Click the "Pesquisar" button next to CNPJ field
                         await log_progress("Acionando botão de pesquisa do Tomador...", "running", client_id)
-                        search_selectors = [
-                            "xpath=//*[self::button or self::a][contains(@id, 'pesquisar') or contains(@id, 'Pesquisar') or contains(., 'Pesquisar')]",
-                            "xpath=//*[contains(@id, 'tomador') or contains(@class, 'tomador') or contains(., 'Tomador')]//*[self::button or self::a][contains(., 'Pesquisar') or contains(., 'Pesq')]",
-                            "xpath=//*[self::button or self::a][contains(., 'Pesquisar')]",
-                            "xpath=//*[self::button or self::a][contains(., 'Pesq')]"
-                        ]
-                        clicked_search = False
-                        for sel in search_selectors:
-                            try:
-                                loc = page.locator(sel)
-                                if await loc.count() > 0:
-                                    for index in range(await loc.count()):
-                                        item = loc.nth(index)
-                                        if await item.is_visible():
-                                            btn_text = (await item.inner_text()).strip()
-                                            if btn_text.lower() == "menu":
-                                                continue
-                                            await log_progress(f"Clicando no botão de pesquisa do Tomador: '{btn_text}'", "running", client_id)
-                                            await item.click()
-                                            clicked_search = True
+                        search_btn_sel = "xpath=//a[contains(@id, 'formNotaFiscal:') and contains(normalize-space(.), 'Pesquisar')]"
+                        try:
+                            btn_locator = page.locator(search_btn_sel).first
+                            await btn_locator.wait_for(state="visible", timeout=8000)
+                            await btn_locator.evaluate("(el) => el.click()")
+                            await log_progress("Botão de pesquisa do Tomador clicado via JS.", "running", client_id)
+                        except Exception as search_click_exc:
+                            await log_progress(f"Falha ao clicar no botão de pesquisa via seletor específico: {search_click_exc}. Tentando fallback...", "warning", client_id)
+                            search_selectors = [
+                                "xpath=//*[self::button or self::a][contains(@id, 'pesquisar') or contains(@id, 'Pesquisar') or contains(., 'Pesquisar')]",
+                                "xpath=//*[contains(@id, 'tomador') or contains(@class, 'tomador') or contains(., 'Tomador')]//*[self::button or self::a][contains(., 'Pesquisar') or contains(., 'Pesq')]",
+                                "xpath=//*[self::button or self::a][contains(., 'Pesquisar')]",
+                                "xpath=//*[self::button or self::a][contains(., 'Pesq')]"
+                            ]
+                            clicked_search = False
+                            for sel in search_selectors:
+                                try:
+                                    loc = page.locator(sel)
+                                    if await loc.count() > 0:
+                                        for index in range(await loc.count()):
+                                            item = loc.nth(index)
+                                            if await item.is_visible():
+                                                btn_text = (await item.inner_text()).strip()
+                                                if btn_text.lower() == "menu":
+                                                    continue
+                                                await log_progress(f"Clicando no botão de pesquisa do Tomador (fallback): '{btn_text}'", "running", client_id)
+                                                await item.evaluate("(el) => el.click()")
+                                                clicked_search = True
+                                                break
+                                        if clicked_search:
                                             break
-                                    if clicked_search:
-                                        break
-                            except Exception:
-                                pass
+                                except Exception:
+                                    pass
                         
                         await page.wait_for_timeout(3000)
                         
