@@ -54,6 +54,7 @@ class ClientModel(BaseModel):
     emails: Optional[str] = ""
     requires_boleto: bool = True
     bradesco_payer_name: Optional[str] = ""
+    due_day: int = 10
 
 class ConfigModel(BaseModel):
     portal_cnpj: str
@@ -136,22 +137,22 @@ def save_client(client: ClientModel):
         cursor.execute("""
             UPDATE clients 
             SET cnpj_cpf = ?, name = ?, invoice_value = ?, boleto_value = ?, 
-                reference_note = ?, retention_type = ?, description_template = ?, emails = ?, requires_boleto = ?, bradesco_payer_name = ?
+                reference_note = ?, retention_type = ?, description_template = ?, emails = ?, requires_boleto = ?, bradesco_payer_name = ?, due_day = ?
             WHERE id = ?
         """, (
             client.cnpj_cpf, client.name, client.invoice_value, client.boleto_value,
             client.reference_note, client.retention_type, client.description_template,
-            client.emails, 1 if client.requires_boleto else 0, client.bradesco_payer_name or "", client.id
+            client.emails, 1 if client.requires_boleto else 0, client.bradesco_payer_name or "", client.due_day, client.id
         ))
     else:
         # Insert
         cursor.execute("""
-            INSERT INTO clients (cnpj_cpf, name, invoice_value, boleto_value, reference_note, retention_type, description_template, emails, requires_boleto, bradesco_payer_name)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO clients (cnpj_cpf, name, invoice_value, boleto_value, reference_note, retention_type, description_template, emails, requires_boleto, bradesco_payer_name, due_day)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             client.cnpj_cpf, client.name, client.invoice_value, client.boleto_value,
             client.reference_note, client.retention_type, client.description_template,
-            client.emails, 1 if client.requires_boleto else 0, client.bradesco_payer_name or ""
+            client.emails, 1 if client.requires_boleto else 0, client.bradesco_payer_name or "", client.due_day
         ))
     
     conn.commit()

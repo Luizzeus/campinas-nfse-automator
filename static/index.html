@@ -386,6 +386,11 @@
                         <input type="number" step="0.01" id="client-billing-val" class="input-field" required>
                     </div>
 
+                    <div class="form-group">
+                        <label for="client-due-day">Dia de Vencimento do Boleto:</label>
+                        <input type="number" id="client-due-day" class="input-field" required value="10" min="1" max="31">
+                    </div>
+
                     <div class="form-group full-width">
                         <label for="client-bradesco-payer-name">Nome na lista de pagadores Bradesco:</label>
                         <input type="text" id="client-bradesco-payer-name" class="input-field" placeholder="Ex: VICTOR PELLEGRINI MAMMANA">

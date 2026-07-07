@@ -68,6 +68,7 @@ const clientNameInput = document.getElementById('client-name');
 const clientCnpjInput = document.getElementById('client-cnpj');
 const clientInvoiceValInput = document.getElementById('client-invoice-val');
 const clientBillingValInput = document.getElementById('client-billing-val');
+const clientDueDayInput = document.getElementById('client-due-day');
 const clientBradescoPayerNameInput = document.getElementById('client-bradesco-payer-name');
 const clientRefNoteInput = document.getElementById('client-ref-note');
 const clientRetentionSelect = document.getElementById('client-retention');
@@ -989,6 +990,7 @@ function initModalEvents() {
             cnpj_cpf: clientCnpjInput.value.trim(),
             invoice_value: parseFloat(clientInvoiceValInput.value),
             boleto_value: parseFloat(clientBillingValInput.value),
+            due_day: parseInt(clientDueDayInput.value) || 10,
             bradesco_payer_name: clientBradescoPayerNameInput.value.trim(),
             reference_note: clientRefNoteInput.value.trim(),
             retention_type: clientRetentionSelect.value,
@@ -1027,6 +1029,7 @@ function openClientModal(client = null) {
         clientCnpjInput.value = client.cnpj_cpf;
         clientInvoiceValInput.value = client.invoice_value;
         clientBillingValInput.value = client.boleto_value;
+        clientDueDayInput.value = client.due_day || 10;
         clientBradescoPayerNameInput.value = client.bradesco_payer_name || '';
         clientRefNoteInput.value = client.reference_note || '';
         clientRetentionSelect.value = client.retention_type;
@@ -1036,6 +1039,7 @@ function openClientModal(client = null) {
     } else {
         modalTitle.textContent = "Novo Cliente";
         clientIdInput.value = '';
+        clientDueDayInput.value = 10;
         clientRequiresBoletoInput.checked = true;
     }
     
