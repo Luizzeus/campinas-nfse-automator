@@ -169,10 +169,134 @@ def find_boleto_file(client_name, invoice_number, competence):
     if len(token_matches) == 1:
         return token_matches[0]["path"]
 
-    return None
+def sync_database_with_files(competence):
+    try:
+        folder = competence.replace("/", "-")
+        target_dir = os.path.join(INVOICES_DIR, folder)
+        if not os.path.isdir(target_dir):
+            return
+
+        files = os.listdir(target_dir)
+        invoice_files = []
+        boleto_files = []
+
+        for f in files:
+            if not f.lower().endswith(".pdf"):
+                continue
+            full_path = os.path.join(target_dir, f)
+            if f.lower().startswith("boleto_"):
+                boleto_files.append((f, full_path))
+            else:
+                invoice_files.append((f, full_path))
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        clients = cursor.execute("SELECT * FROM clients").fetchall()
+
+        for client in clients:
+            client_id = client["id"]
+            client_name = client["name"]
+            normalized_client = normalize_filename_part(client_name)
+            
+            # Get tokens
+            client_tokens = [t for t in normalized_client.split("_") if len(t) >= 3]
+            requires_boleto = bool(client["requires_boleto"])
+
+            matched_invoice_file = None
+            matched_invoice_path = None
+            invoice_number = None
+            best_score = 0
+
+            for fname, fpath in invoice_files:
+                normalized_fname = normalize_filename_part(os.path.splitext(fname)[0])
+                score = sum(1 for token in client_tokens if token in normalized_fname)
+                if normalized_client in normalized_fname:
+                    score += 10
+                if score > best_score and score > 0:
+                    match = re.search(r'_(\d{4})_', fname)
+                    if match:
+                        best_score = score
+                        invoice_number = match.group(1)
+                        matched_invoice_file = fname
+                        matched_invoice_path = fpath
+
+            matched_boleto_file = None
+            matched_boleto_path = None
+            best_boleto_score = 0
+
+            if requires_boleto and invoice_number:
+                for fname, fpath in boleto_files:
+                    normalized_fname = normalize_filename_part(os.path.splitext(fname)[0])
+                    if f"_{invoice_number}_" in fname or normalized_fname.endswith(f"_{invoice_number}"):
+                        score = sum(1 for token in client_tokens if token in normalized_fname)
+                        if normalized_client in normalized_fname:
+                            score += 10
+                        if score > best_boleto_score and score > 0:
+                            best_boleto_score = score
+                            matched_boleto_file = fname
+                            matched_boleto_path = fpath
+
+            if matched_invoice_file:
+                # Find latest row in emissions
+                em_row = cursor.execute(
+                    "SELECT id, status, boleto_status FROM emissions WHERE client_id = ? AND competence = ? ORDER BY id DESC LIMIT 1",
+                    (client_id, competence)
+                ).fetchone()
+
+                if em_row:
+                    emission_id = em_row["id"]
+                    cursor.execute("""
+                        UPDATE emissions
+                        SET status = 'emitida',
+                            invoice_number = ?,
+                            pdf_path = ?,
+                            error_message = NULL,
+                            screenshot_path = NULL
+                        WHERE id = ?
+                    """, (invoice_number, matched_invoice_path, emission_id))
+                else:
+                    cursor.execute("""
+                        INSERT INTO emissions (client_id, competence, status, invoice_number, pdf_path)
+                        VALUES (?, ?, 'emitida', ?, ?)
+                    """, (client_id, competence, invoice_number, matched_invoice_path))
+                    emission_id = cursor.lastrowid
+
+                if matched_boleto_file:
+                    cursor.execute("""
+                        UPDATE emissions
+                        SET boleto_status = 'gerado',
+                            boleto_pdf_path = ?,
+                            boleto_error_message = NULL,
+                            boleto_screenshot_path = NULL
+                        WHERE id = ?
+                    """, (matched_boleto_path, emission_id))
+                elif not requires_boleto:
+                    cursor.execute("""
+                        UPDATE emissions
+                        SET boleto_status = 'gerado',
+                            boleto_error_message = NULL,
+                            boleto_screenshot_path = NULL
+                        WHERE id = ?
+                    """, (emission_id,))
+                else:
+                    cursor.execute("""
+                        UPDATE emissions
+                        SET boleto_status = NULL,
+                            boleto_pdf_path = NULL,
+                            boleto_error_message = NULL,
+                            boleto_screenshot_path = NULL
+                        WHERE id = ? AND (boleto_status IS NULL OR boleto_status != 'gerado')
+                    """, (emission_id,))
+
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Error during on-the-fly database sync: {traceback.format_exc()}")
 
 
 def verify_boleto_files(competence):
+    sync_database_with_files(competence)
     report = []
     for emission in latest_emitted_notes(competence):
         boleto_path = find_boleto_file(emission["client_name"], emission.get("invoice_number"), competence)
@@ -188,6 +312,7 @@ def verify_boleto_files(competence):
 
 
 def get_billing_email_items(competence):
+    sync_database_with_files(competence)
     emissions = latest_emitted_notes(competence)
     conn = get_db_connection()
     cursor = conn.cursor()
