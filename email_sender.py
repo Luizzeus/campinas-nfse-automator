@@ -286,7 +286,7 @@ def sync_database_with_files(competence):
                             boleto_pdf_path = NULL,
                             boleto_error_message = NULL,
                             boleto_screenshot_path = NULL
-                        WHERE id = ? AND (boleto_status IS NULL OR boleto_status != 'gerado')
+                        WHERE id = ?
                     """, (emission_id,))
 
         conn.commit()

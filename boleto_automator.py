@@ -4,7 +4,6 @@ import re
 import datetime
 from calendar import monthrange
 import unicodedata
-from urllib.parse import urljoin
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError, async_playwright
 from database import get_db_connection
 from utils import get_competence_info
@@ -39,11 +38,17 @@ def get_payer_search_names(client_name, bradesco_payer_name=None):
     return names
 
 def get_due_date_for_client(ref_date=None, due_day=None):
-    """Return boleto due date: always day 10 of the current execution month."""
+    """Return boleto due date: day 10, rolled to next month if day 10 already passed."""
     today = datetime.date.today()
     month = today.month
     year = today.year
-    
+
+    if today.day > 10:
+        month += 1
+        if month > 12:
+            month = 1
+            year += 1
+
     days_in_month = monthrange(year, month)[1]
     day = min(10, days_in_month)
     return f"{day:02d}", f"{month:02d}", f"{year}"
@@ -68,6 +73,26 @@ async def wait_for_bradesco_logged_in(page, timeout_ms=180000):
                 pass
         await page.wait_for_timeout(1000)
     return False
+async def dismiss_promo_banners(page):
+    """Close promotional interstitials (e.g. 'Contrate a Folha de Pagamento')
+    that Bradesco overlays on top of the form and can swallow real clicks."""
+    try:
+        closers = page.locator(
+            "xpath=//*[self::a or self::button or self::span or self::div]"
+            "[normalize-space(text())='Fechar' or normalize-space(text())='fechar']"
+        )
+        count = await closers.count()
+        for i in range(count):
+            btn = closers.nth(i)
+            try:
+                if await btn.is_visible():
+                    await btn.click(timeout=2000)
+                    await page.wait_for_timeout(300)
+            except Exception:
+                pass
+    except Exception:
+        pass
+
 async def remove_overlays(page):
     """Remove any modal overlays or windows blocking input in the DOM."""
     try:
@@ -221,43 +246,94 @@ async def find_first_visible_in_contexts(contexts, selectors, timeout_ms=10000):
         await asyncio.sleep(0.3)
     raise RuntimeError(f"Nenhum seletor visível encontrado: {selectors}. Último erro: {last_error}")
 
-async def select_payer_from_list(page, context, frame, cnpj_cpf, client_name, bradesco_payer_name=None):
-    lista_pagadores_sel = "id=frm:linkListaPagadores"
-    popup = None
-    href = None
+async def select_payer_from_list(page, context, frame, cnpj_cpf, client_name, bradesco_payer_name=None, cep=None, endereco=None):
+    """Fill the payer directly via 'Informar novo pagador' (name + CPF/CNPJ +
+    CEP + endereço) instead of the "Lista de Pagadores" lookup. The lookup
+    link reliably falls back to opening a real separate browser window/tab
+    in our automated session (the target="modal_infra_estrutura" iframe it
+    expects doesn't exist in the DOM yet when we click), and that popup's own
+    JS then fails to hand the selection back to the parent form. Filling the
+    document fields directly sidesteps that entirely and is fully within the
+    same frame."""
+    payer_name = bradesco_payer_name or client_name
+    digits = re.sub(r"\D+", "", cnpj_cpf or "")
+    cep_digits = re.sub(r"\D+", "", cep or "")
+
+    if len(cep_digits) != 8:
+        raise RuntimeError(
+            f"CEP do pagador '{client_name}' ausente ou inválido ({cep!r}) - necessário para o cadastro no Bradesco."
+        )
+    if not endereco:
+        raise RuntimeError(f"Endereço do pagador '{client_name}' ausente - necessário para o cadastro no Bradesco.")
+
+    payer_field = frame.locator("id=frm:txtPagador").first
+    await payer_field.wait_for(state="visible", timeout=10000)
+    await payer_field.click()
     try:
-        href = await frame.locator(lista_pagadores_sel).first.get_attribute("href")
+        await payer_field.fill("")
     except Exception:
-        href = None
+        pass
+    await payer_field.press_sequentially(payer_name, delay=80)
+    await frame.wait_for_timeout(800)
 
+    cadastrar_btn = frame.locator("id=frm:cadastrarPagador").first
+    await cadastrar_btn.click()
+    await frame.wait_for_timeout(1200)
+
+    if len(digits) == 11:
+        pf_radio = frame.locator("id=frm:rdoPF").first
+        if await pf_radio.count() > 0:
+            await pf_radio.check()
+            await frame.wait_for_timeout(500)
+        for field_id, value in [
+            ("frm:txtCPF1", digits[0:3]),
+            ("frm:txtCPF2", digits[3:6]),
+            ("frm:txtCPF3", digits[6:9]),
+            ("frm:txtCPF4", digits[9:11]),
+        ]:
+            await frame.locator(f"id={field_id}").first.fill(value)
+    elif len(digits) == 14:
+        pj_radio = frame.locator("id=frm:rdoPJ").first
+        if await pj_radio.count() > 0:
+            await pj_radio.check()
+            await frame.wait_for_timeout(500)
+        for field_id, value in [
+            ("frm:txtCNPJ1", digits[0:2]),
+            ("frm:txtCNPJ2", digits[2:5]),
+            ("frm:txtCNPJ3", digits[5:8]),
+            ("frm:txtCNPJ4", digits[8:12]),
+            ("frm:txtCNPJ5", digits[12:14]),
+        ]:
+            await frame.locator(f"id={field_id}").first.fill(value)
+    else:
+        raise RuntimeError(f"CNPJ/CPF com tamanho inesperado ({len(digits)} dígitos): {digits}")
+
+    # CEP: campoCep1 (5 digits) + campoCep2 (3 digits), then "Consultar CEP"
+    # auto-fills Estado/Cidade via AJAX.
+    await frame.locator("id=frm:campoCep1").first.fill(cep_digits[0:5])
+    await frame.locator("id=frm:campoCep2").first.fill(cep_digits[5:8])
+    consultar_cep_btn = frame.locator("id=frm:consultaCepPagador").first
+    await consultar_cep_btn.click()
+    await frame.wait_for_timeout(2500)
+
+    endereco_field = frame.locator("id=frm:inputEnderecoAux").first
+    await endereco_field.fill(endereco)
+    await endereco_field.dispatch_event("blur")
+    await frame.wait_for_timeout(500)
+
+    estado_text = None
+    cidade_text = None
     try:
-        async with context.expect_page(timeout=10000) as page_info:
-            await click_element(frame, lista_pagadores_sel)
-        popup = await page_info.value
+        estado_text = (await frame.locator("id=frm:estadoPagador").first.inner_text()).strip()
+        cidade_text = (await frame.locator("id=frm:cidadePagador").first.inner_text()).strip()
     except Exception:
-        if len(context.pages) > 1:
-            popup = context.pages[-1]
+        pass
+    print(f"[BRADESCO INFO] Após consultar CEP {cep}: Estado={estado_text!r} Cidade={cidade_text!r}")
+    if not estado_text or not cidade_text:
+        raise RuntimeError(f"Consulta de CEP não retornou Estado/Cidade para '{client_name}' (CEP {cep}).")
 
-    if popup == page:
-        popup = None
-    if not popup and href:
-        popup = await context.new_page()
-        await popup.goto(urljoin(frame.url, href), timeout=30000)
-
-    target_page = popup if popup else page
-    await target_page.bring_to_front()
-    await target_page.wait_for_timeout(3000)
-
-    # Dump popup DOM for debugging
-    try:
-        popup_html = await target_page.content()
-        with open("C:/Projetos/campinas-nfse-automator/popup_dom.html", "w", encoding="utf-8") as f:
-            f.write(popup_html)
-        print("[BRADESCO INFO] DOM do popup salvo com sucesso em popup_dom.html!")
-    except Exception as e:
-        print(f"[BRADESCO WARNING] Erro ao salvar DOM do popup: {e}")
-        
-    raise RuntimeError("DOM do popup salvo! Parando para análise de seletores.")
+    payer_value = await payer_field.input_value()
+    print(f"[BRADESCO INFO] Pagador '{client_name}' preenchido: nome={payer_value!r}, doc={digits}, cep={cep}, endereço={endereco}.")
 
 
 
@@ -315,15 +391,31 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
             # 2. Login Flow
             await log_progress("Acessando Bradesco Net Empresa...", "info")
             await page.goto(BRADESCO_LOGIN_URL, timeout=45000)
-            await page.wait_for_timeout(2000)
-            
+            await page.wait_for_timeout(4000)
+
             await log_progress("Preenchendo usuário e senha do Bradesco...", "info")
-            await page.fill('input[id="identificationForm:txtUsuario"]', bradesco_user)
-            await page.fill('input[id="identificationForm:txtSenha"]', bradesco_password)
-            
+            # Type with human-like keystrokes/delay instead of an instant .fill() -
+            # too-fast automated fills can get bounced back to the login form by
+            # the bank's anti-fraud checks.
+            user_field = page.locator('input[id="identificationForm:txtUsuario"]').first
+            await user_field.click()
+            await user_field.press_sequentially(bradesco_user, delay=80)
+            await page.wait_for_timeout(500)
+            pass_field = page.locator('input[id="identificationForm:txtSenha"]').first
+            await pass_field.click()
+            await pass_field.press_sequentially(bradesco_password, delay=80)
+            await page.wait_for_timeout(800)
+
             await log_progress("Clicando em Avançar no login do Bradesco...", "info")
             await click_element(page, 'input[id="identificationForm:botaoAvancar"]')
             await page.wait_for_timeout(3000)
+
+            # A captcha/challenge may appear here before 2FA. Just let the
+            # existing wait_for_bradesco_logged_in loop below ride it out -
+            # it already polls for up to 3 minutes for the human to clear
+            # whatever step (captcha and/or 2FA) is in the way.
+            if await user_field.count() > 0 and await user_field.is_visible():
+                await log_progress("Ainda na tela de login (possível captcha) - aguardando você resolver manualmente...", "warning")
             
             # Wait up to 3 minutes for login to complete
             await log_progress("Aguardando autenticação 2FA (Chave de Segurança/Token) e login pelo usuário na tela do navegador...", "warning")
@@ -345,6 +437,8 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
                 boleto_value = item["boleto_value"]
                 due_day = item["due_day"]
                 bradesco_payer_name = item.get("bradesco_payer_name") or ""
+                payer_cep = item.get("payer_cep") or ""
+                payer_endereco = item.get("payer_endereco") or ""
                 
                 await log_progress(f"Iniciando geração de boleto para: {client_name} (Nota Nº {invoice_number})", "running")
                 
@@ -450,52 +544,99 @@ async def run_boleto_automation(emissions_to_process, ref_date=None, progress_ca
 
                     # 5. Pagador Search & Selection, before the first Avançar.
                     await log_progress("Selecionando pagador (cliente)...", "running")
-                    await select_payer_from_list(page, context, frame, cnpj_cpf, client_name, bradesco_payer_name)
+                    await select_payer_from_list(page, context, frame, cnpj_cpf, client_name, bradesco_payer_name, cep=payer_cep, endereco=payer_endereco)
                     await page.bring_to_front()
                     frame = await get_central_frame(page)
+
+                    # Dismiss any promotional banner (e.g. "Contrate a Folha de
+                    # Pagamento") that can sit on top of the Avançar button and
+                    # swallow the click.
+                    await dismiss_promo_banners(page)
 
                     # Click Avançar on the filled boleto form.
                     await log_progress("Clicando em Avançar para abrir a confirmação do boleto...", "running")
                     avancar_sel = "id=frm:botaoAvancar"
+                    avancar_btn = frame.locator(avancar_sel).first
                     await click_element(frame, avancar_sel)
-                    await page.wait_for_timeout(4000)
 
+                    # Verify we actually left "1. Dados da Emissão" instead of
+                    # blindly sleeping and hoping the step changed.
+                    left_step_1 = True
+                    try:
+                        await avancar_btn.wait_for(state="detached", timeout=10000)
+                    except Exception:
+                        try:
+                            await avancar_btn.wait_for(state="hidden", timeout=5000)
+                        except Exception:
+                            left_step_1 = False
+                    if not left_step_1:
+                        await dismiss_promo_banners(page)
+                        await click_element(frame, avancar_sel)
+                        try:
+                            await avancar_btn.wait_for(state="detached", timeout=10000)
+                            left_step_1 = True
+                        except Exception:
+                            left_step_1 = False
+                    if not left_step_1:
+                        raise RuntimeError("Não foi possível sair da etapa 'Dados da Emissão' (botão Avançar não teve efeito).")
+
+                    await page.wait_for_timeout(1500)
                     frame = await get_central_frame(page)
-                    await log_progress("Confirmando emissão do boleto...", "running")
-                    confirmar_sel = "xpath=//*[self::input or self::button or self::a][contains(@value, 'Avançar') or contains(@value, 'Avancar') or contains(normalize-space(.), 'Avançar') or contains(normalize-space(.), 'Avancar') or contains(@value, 'Emitir') or contains(normalize-space(.), 'Emitir') or contains(@id, 'botaoAvancar') or contains(@id, 'botaoConfirmar')]"
-                    await click_element(frame, confirmar_sel)
-                    await page.wait_for_timeout(4000)
-                    
-                    # Save generated PDF using "Salvar como arquivo" button
+                    await dismiss_promo_banners(page)
+
+                    # NOTE: clicking "Avançar" above already fully creates the
+                    # boleto - this Bradesco flow has no separate confirmation
+                    # click. What follows immediately is the "Confirmação de
+                    # Operação" receipt (Nosso Número, barcode, QR code already
+                    # assigned), not a review step. Confirmed by checking
+                    # "Consultar Boletos" after a live run.
+                    await log_progress("Boleto emitido - acessando recibo para salvar o PDF...", "running")
+
+                    # Save generated PDF using "Salvar como arquivo" button.
+                    # NOTE: use get_by_text (not raw xpath contains()) - the
+                    # button labels use non-breaking spaces between words,
+                    # which xpath's contains() does not treat as a normal
+                    # space, causing silent match failures.
                     await log_progress("Acessando arquivo de boleto para download...", "running")
-                    salvar_arquivo_sel = "xpath=//*[self::a or self::button or self::input][contains(normalize-space(.), 'Salvar como') or contains(normalize-space(.), 'salvar') or contains(@id, 'salvar') or contains(@id, 'Salvar')]"
-                    
-                    # Wait for the file saving options popup
+                    salvar_el = frame.get_by_text("Salvar como arquivo", exact=False).first
+
                     popup_save = None
                     try:
                         async with context.expect_page(timeout=10000) as page_info:
-                            await click_element(frame, salvar_arquivo_sel)
+                            await salvar_el.click()
                         popup_save = await page_info.value
                     except Exception:
                         if len(context.pages) > 1:
                             popup_save = context.pages[-1]
-                            
+
                     target_save_page = popup_save if popup_save else page
                     await target_save_page.bring_to_front()
                     await target_save_page.wait_for_timeout(2000)
-                    
-                    # Click "pdf" option inside the popup to download the PDF file
+
+                    # Click "pdf" option inside the popup to download the PDF file.
+                    # Search every frame on that page for the "pdf" option -
+                    # its exact nesting isn't guaranteed.
                     await log_progress("Iniciando download do PDF do boleto...", "running")
-                    pdf_option_sel = "xpath=//*[self::a or self::button or self::input][contains(normalize-space(.), 'pdf') or contains(normalize-space(.), 'PDF') or contains(normalize-space(text()), 'PDF') or contains(normalize-space(text()), 'pdf')]"
-                    
+                    pdf_el = None
+                    for f in target_save_page.frames:
+                        try:
+                            candidate = f.get_by_text("pdf", exact=False).first
+                            if await candidate.count() > 0:
+                                pdf_el = candidate
+                                break
+                        except Exception:
+                            continue
+                    if pdf_el is None:
+                        raise RuntimeError("Não encontrei a opção 'pdf' na tela de salvar arquivo.")
+
                     # Capture the download
                     date_for_filename = datetime.date.today().strftime("%d-%m-%Y")
                     slug_client = slugify_name(client_name)
                     filename = f"Boleto_{slug_client}_{invoice_number}_{date_for_filename}.pdf"
                     pdf_path = os.path.join(invoice_folder, filename)
-                    
+
                     async with target_save_page.expect_download(timeout=30000) as download_info:
-                        await click_element(target_save_page, pdf_option_sel)
+                        await pdf_el.click()
                     download = await download_info.value
                     await download.save_as(pdf_path)
                     

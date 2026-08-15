@@ -23,3 +23,8 @@ env/
 
 # Portable Git
 mingit/
+
+# Debug DOM dumps (contain live session tokens/viewstate)
+frame_dom*.html
+popup_dom*.html
+page_dom*.html

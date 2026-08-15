@@ -94,6 +94,10 @@ def init_db():
         cursor.execute("ALTER TABLE clients ADD COLUMN requires_boleto INTEGER DEFAULT 1")
     if "bradesco_payer_name" not in client_columns:
         cursor.execute("ALTER TABLE clients ADD COLUMN bradesco_payer_name TEXT DEFAULT ''")
+    if "cep" not in client_columns:
+        cursor.execute("ALTER TABLE clients ADD COLUMN cep TEXT DEFAULT ''")
+    if "endereco" not in client_columns:
+        cursor.execute("ALTER TABLE clients ADD COLUMN endereco TEXT DEFAULT ''")
     cursor.execute("""
         UPDATE clients
         SET bradesco_payer_name = ?
@@ -116,6 +120,10 @@ def init_db():
         cursor.execute("ALTER TABLE emissions ADD COLUMN boleto_error_message TEXT DEFAULT NULL")
     if "boleto_screenshot_path" not in emissions_columns:
         cursor.execute("ALTER TABLE emissions ADD COLUMN boleto_screenshot_path TEXT DEFAULT NULL")
+    if "boleto_due_date" not in emissions_columns:
+        cursor.execute("ALTER TABLE emissions ADD COLUMN boleto_due_date TEXT DEFAULT NULL")
+    if "boleto_value" not in emissions_columns:
+        cursor.execute("ALTER TABLE emissions ADD COLUMN boleto_value REAL DEFAULT NULL")
 
     conn.commit()
     

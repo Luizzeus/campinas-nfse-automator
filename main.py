@@ -404,7 +404,7 @@ async def execute_boleto_automation_task(client_ids: List[int], ref_date_str: Op
         emissions_to_process = []
         for client_id in client_ids:
             cursor.execute("""
-                SELECT e.id as emission_id, e.invoice_number, c.name as client_name, c.cnpj_cpf, c.boleto_value, c.due_day, c.bradesco_payer_name
+                SELECT e.id as emission_id, e.invoice_number, c.name as client_name, c.cnpj_cpf, c.boleto_value, c.due_day, c.bradesco_payer_name, c.cep, c.endereco
                 FROM emissions e
                 JOIN clients c ON e.client_id = c.id
                 WHERE e.client_id = ? AND e.competence = ? AND e.status = 'emitida'
@@ -419,7 +419,9 @@ async def execute_boleto_automation_task(client_ids: List[int], ref_date_str: Op
                     "bradesco_payer_name": row["bradesco_payer_name"],
                     "invoice_number": row["invoice_number"],
                     "boleto_value": row["boleto_value"],
-                    "due_day": row["due_day"]
+                    "due_day": row["due_day"],
+                    "payer_cep": row["cep"],
+                    "payer_endereco": row["endereco"]
                 })
             else:
                 await log_to_websocket({
