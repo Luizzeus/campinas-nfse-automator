@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/sync-repo.sh pull",
+            "timeout": 30,
+            "statusMessage": "Sincronizando com o repo remoto..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/sync-repo.sh push",
+            "timeout": 30,
+            "statusMessage": "Enviando memoria/output para o repo remoto..."
+          }
+        ]
+      }
+    ]
+  }
+}
