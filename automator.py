@@ -1528,6 +1528,55 @@ def extract_invoice_number_from_pdf(pdf_path):
     except Exception:
         return None, ""
 
+def parse_brl_money(text):
+    """Parse a Brazilian-formatted amount like '3.482,89' or 'R$ 3.482,89' into a float."""
+    if text is None:
+        return None
+    cleaned = re.sub(r"[^\d,.\-]", "", str(text)).strip()
+    if not cleaned:
+        return None
+    cleaned = cleaned.replace(".", "").replace(",", ".")
+    try:
+        return float(cleaned)
+    except ValueError:
+        return None
+
+def extract_valor_liquido_from_text(text):
+    """Extract "Valor Líquido da NFSe Campinas" (net value after all retentions/deductions)
+    from the emitted NFSe's PDF text.
+
+    The portal's PDF layout places the row of amounts (Base de cálculo do ISSQN,
+    Retenções, Desc. incondicionado, Valor Líquido) immediately before the literal
+    "VALOR TOTAL" label and its column headers (text extraction order is reversed
+    relative to visual layout), e.g.:
+        R$ 3.580,00 R$ 97,11 R$ 0,00 R$ 3.482,89
+        VALOR TOTAL
+        Base de cálculo do ISSQN (R$) Retenções (R$) Desc. incondicionado (R$) Valor Líquido da NFSe Campinas (R$)
+    """
+    if not text:
+        return None
+    match = re.search(r"((?:R\$\s*[\d.,]+\s*){4})\n\s*VALOR TOTAL", text)
+    if not match:
+        return None
+    amounts = re.findall(r"R\$\s*([\d.,]+)", match.group(1))
+    if len(amounts) != 4:
+        return None
+    return parse_brl_money(amounts[-1])
+
+def extract_valor_liquido_from_pdf(pdf_path):
+    """Read the emitted NFSe PDF and return its real net value (Valor Líquido da NFSe),
+    i.e. the invoice value minus whatever retentions the portal actually calculated.
+    Returns None if the PDF can't be read or the field can't be found."""
+    if not pdf_path or not is_pdf_file(pdf_path):
+        return None
+    try:
+        from pypdf import PdfReader
+        reader = PdfReader(pdf_path)
+        text = "\n".join(p.extract_text() or "" for p in reader.pages)
+        return extract_valor_liquido_from_text(text)
+    except Exception:
+        return None
+
 def pdf_text_matches_client(pdf_text, client):
     digits_text = re.sub(r"\D+", "", pdf_text or "")
     client_doc = re.sub(r"\D+", "", client.get("cnpj_cpf") or "")
@@ -2119,6 +2168,21 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
                         await log_progress(f"Validação em Gerenciar NFSE falhou, mas a nota já está salva localmente: {manage_error}", "warning", client_id)
                     else:
                         raise
+                # Use the real net value ("Valor Líquido da NFSe") calculated by the
+                # portal on the emitted invoice itself, instead of the static
+                # client.boleto_value config, which can drift out of date whenever
+                # the ISSQN retention rate changes (e.g. Simples Nacional aliquot
+                # varies with rolling revenue) and silently under-charge the boleto.
+                valor_liquido_real = extract_valor_liquido_from_pdf(pdf_path)
+                if valor_liquido_real is not None and abs(valor_liquido_real - boleto_value) > 0.01:
+                    await log_progress(
+                        f"Valor líquido real da NFSe (R$ {valor_liquido_real:,.2f}) difere do valor cadastrado no cliente (R$ {boleto_value:,.2f}). Usando o valor real da nota para o boleto.".replace(",", "X").replace(".", ",").replace("X", "."),
+                        "warning", client_id
+                    )
+                    boleto_value = valor_liquido_real
+                elif valor_liquido_real is None:
+                    await log_progress("Não consegui ler o valor líquido no PDF da nota emitida; usando o valor cadastrado do cliente para o boleto.", "warning", client_id)
+
                 await log_progress(f"Valor do boleto no relatório: R$ {boleto_value:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."), "info", client_id)
 
                 # 10. Log Success in SQLite

@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import List, Optional
 from database import get_db_connection, init_db
-from automator import recover_nfse_pdf, run_nfse_automation
+from automator import recover_nfse_pdf, run_nfse_automation, extract_valor_liquido_from_pdf
 from reporter import generate_pdf_report
 from email_sender import get_billing_email_items, run_billing_email_automation, verify_boleto_files
 from utils import get_competence_info
@@ -404,7 +404,7 @@ async def execute_boleto_automation_task(client_ids: List[int], ref_date_str: Op
         emissions_to_process = []
         for client_id in client_ids:
             cursor.execute("""
-                SELECT e.id as emission_id, e.invoice_number, c.name as client_name, c.cnpj_cpf, c.boleto_value, c.due_day, c.bradesco_payer_name, c.cep, c.endereco
+                SELECT e.id as emission_id, e.invoice_number, e.pdf_path, c.name as client_name, c.cnpj_cpf, c.boleto_value, c.due_day, c.bradesco_payer_name, c.cep, c.endereco
                 FROM emissions e
                 JOIN clients c ON e.client_id = c.id
                 WHERE e.client_id = ? AND e.competence = ? AND e.status = 'emitida'
@@ -412,13 +412,32 @@ async def execute_boleto_automation_task(client_ids: List[int], ref_date_str: Op
             """, (client_id, competence_str))
             row = cursor.fetchone()
             if row:
+                # Prefer the real net value ("Valor Líquido da NFSe") read from the
+                # emitted invoice's own PDF over the static client.boleto_value config,
+                # which can go stale whenever the ISSQN retention rate changes and
+                # silently under-charge the boleto.
+                boleto_value = row["boleto_value"]
+                valor_liquido_real = extract_valor_liquido_from_pdf(row["pdf_path"])
+                if valor_liquido_real is not None and abs(valor_liquido_real - boleto_value) > 0.01:
+                    await log_to_websocket({
+                        "timestamp": datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                        "status": "warning",
+                        "message": f"{row['client_name']}: valor líquido real da NFSe (R$ {valor_liquido_real:,.2f}) difere do valor cadastrado no cliente (R$ {boleto_value:,.2f}). Usando o valor real da nota para o boleto.".replace(",", "X").replace(".", ",").replace("X", ".")
+                    })
+                    boleto_value = valor_liquido_real
+                elif valor_liquido_real is None:
+                    await log_to_websocket({
+                        "timestamp": datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                        "status": "warning",
+                        "message": f"{row['client_name']}: não consegui ler o valor líquido no PDF da nota emitida; usando o valor cadastrado do cliente para o boleto."
+                    })
                 emissions_to_process.append({
                     "emission_id": row["emission_id"],
                     "client_name": row["client_name"],
                     "cnpj_cpf": row["cnpj_cpf"],
                     "bradesco_payer_name": row["bradesco_payer_name"],
                     "invoice_number": row["invoice_number"],
-                    "boleto_value": row["boleto_value"],
+                    "boleto_value": boleto_value,
                     "due_day": row["due_day"],
                     "payer_cep": row["cep"],
                     "payer_endereco": row["endereco"]
