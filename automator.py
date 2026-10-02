@@ -125,17 +125,18 @@ async def fill_invoice_service_value(page, value_br, timeout_ms=15000):
                 const inputs = Array.from(document.querySelectorAll('input'))
                     .filter(input => visible(input) && !input.disabled && !input.readOnly && (input.type || '').toLowerCase() !== 'hidden');
                     
+                const norm = (text) => (text || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
                 const labels = Array.from(document.querySelectorAll('*'))
                     .filter(el => {
                         if (el.tagName === 'INPUT' || el.tagName === 'SCRIPT' || el.tagName === 'STYLE') return false;
                         if (!visible(el)) return false;
-                        const txt = (el.innerText || el.textContent || '').toLowerCase();
+                        const txt = norm(el.innerText || el.textContent || '');
                         return txt.includes('valor dos servicos') && !txt.includes('calculo');
                     });
-                    
+
                 let target = null;
                 let minDistance = Infinity;
-                
+
                 for (const input of inputs) {
                     const inputRect = input.getBoundingClientRect();
                     for (const label of labels) {
@@ -149,19 +150,11 @@ async def fill_invoice_service_value(page, value_br, timeout_ms=15000):
                         }
                     }
                 }
-                
+
                 if (!target) {
-                    const candidates = inputs.filter(input => (input.id || '').includes('idInputText_input'));
-                    if (candidates.length > 0) {
-                        candidates.sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
-                        target = candidates[0];
-                    }
+                    target = inputs.find(input => input.value === '0,00' || input.value === '0');
                 }
-                
-                if (!target) {
-                    target = inputs.find(input => input.value === '0,00');
-                }
-                
+
                 if (!target) {
                     const candidates = inputs.map((input) => {
                         const rect = input.getBoundingClientRect();
@@ -322,17 +315,18 @@ async def validate_manual_invoice_values(page, expected_service_value, taxes_to_
             const inputs = Array.from(document.querySelectorAll('input'))
                 .filter(input => visible(input) && !input.disabled && !input.readOnly && (input.type || '').toLowerCase() !== 'hidden');
                 
+            const normLabel = (text) => (text || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
             const labels = Array.from(document.querySelectorAll('*'))
                 .filter(el => {
                     if (el.tagName === 'INPUT' || el.tagName === 'SCRIPT' || el.tagName === 'STYLE') return false;
                     if (!visible(el)) return false;
-                    const txt = (el.innerText || el.textContent || '').toLowerCase();
+                    const txt = normLabel(el.innerText || el.textContent || '');
                     return txt.includes('valor dos servicos') && !txt.includes('calculo');
                 });
-                
+
             let target = null;
             let minDistance = Infinity;
-            
+
             for (const input of inputs) {
                 const inputRect = input.getBoundingClientRect();
                 for (const label of labels) {
@@ -346,17 +340,9 @@ async def validate_manual_invoice_values(page, expected_service_value, taxes_to_
                     }
                 }
             }
-            
+
             if (!target) {
-                const candidates = inputs.filter(input => (input.id || '').includes('idInputText_input'));
-                if (candidates.length > 0) {
-                    candidates.sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
-                    target = candidates[0];
-                }
-            }
-            
-            if (!target) {
-                target = inputs.find(input => input.value === '0,00');
+                target = inputs.find(input => input.value === '0,00' || input.value === '0');
             }
             
             let serviceValue = '';
@@ -395,7 +381,71 @@ async def validate_manual_invoice_values(page, expected_service_value, taxes_to_
     return snapshot
 
 async def select_economic_activity(page, code="620400001", timeout_ms=20000):
-    """Select and confirm Atividade do Cadastro Economico by service/CNAE code."""
+    """Select and confirm Atividade do Serviço Tomado by service/CNAE code.
+
+    The portal (as of 2026-10) exposes this as a 'lookup' widget: a small
+    read-only pair of inputs (código + descrição) next to a magnifying-glass
+    button. Typing directly into the código box and blurring does NOT
+    resolve it (confirmed live - the description stays empty); the only
+    working path is opening the lookup dialog, searching by CNAE code in its
+    'Atividade' tab, and clicking the matching result row.
+    """
+    desc_field = page.locator('xpath=//input[contains(@id, "idAtividadeLivre:descriptionLookup")]').first
+    if await desc_field.count() > 0:
+        current_desc = (await desc_field.input_value() or "").strip()
+        if current_desc:
+            return {"alreadySelected": True, "text": current_desc}
+
+    magnifier_sel = 'xpath=//td[.//input[contains(@id,"idAtividadeLivre:codeLookup")]]/following-sibling::td//a[1]'
+    dialog_sel = '[id="formNotaFiscal:idAtividadeLivre:idDialog"]'
+
+    if await page.locator(magnifier_sel).count() > 0:
+        deadline = datetime.datetime.now() + datetime.timedelta(milliseconds=timeout_ms)
+        last_error = None
+        while datetime.datetime.now() < deadline:
+            try:
+                await click_first_visible(page, magnifier_sel, timeout_ms=5000)
+                dialog = page.locator(dialog_sel)
+                await dialog.wait_for(state="visible", timeout=5000)
+
+                cnae_input = dialog.locator('xpath=.//input[contains(@id, "filterSearchcodigoCnae")]').first
+                await cnae_input.click()
+                await cnae_input.fill(code)
+
+                search_btn = dialog.locator("xpath=.//a[contains(normalize-space(.), 'Pesquisar')]").first
+                await search_btn.click()
+                await page.wait_for_timeout(1500)
+
+                row = dialog.locator(f"xpath=.//tr[td[normalize-space()='{code}']]").first
+                await row.wait_for(state="visible", timeout=8000)
+                row_text = (await row.inner_text()).replace("\n", " ").strip()
+                # The first (unlabeled) column holds the actual "select this
+                # row" icon/link — clicking the row text itself only
+                # highlights it without confirming the selection.
+                select_icon = row.locator("xpath=.//td[1]//a | .//td[1]//*[self::span or self::i]").first
+                if await select_icon.count() > 0:
+                    await select_icon.click()
+                else:
+                    await row.locator("xpath=.//td[1]").first.click()
+                    await page.wait_for_timeout(300)
+                    await row.click()
+                await page.wait_for_timeout(1000)
+
+                try:
+                    await wait_processing_finished(page, timeout_ms=8000)
+                except Exception:
+                    pass
+
+                resolved_desc = (await desc_field.input_value() or "").strip() if await desc_field.count() > 0 else ""
+                if resolved_desc:
+                    return {"alreadySelected": False, "text": resolved_desc}
+                last_error = f"Linha selecionada ({row_text!r}) mas a descrição não foi preenchida"
+            except Exception as exc:
+                last_error = exc
+            await page.wait_for_timeout(500)
+        raise RuntimeError(f"Não consegui selecionar a atividade econômica {code} via diálogo de busca. Último erro: {last_error}")
+
+    # Fallback: older <select>-based UI
     deadline = datetime.datetime.now() + datetime.timedelta(milliseconds=timeout_ms)
     last_result = None
     while datetime.datetime.now() < deadline:
@@ -528,6 +578,55 @@ async def close_optional_complement_dialog(page, timeout_ms=5000):
         await page.wait_for_timeout(500)
     return {"closed": False, "found": bool(last_text), "text": last_text}
 
+async def handle_emissor_model_choice(page, timeout_ms=8000, prefer="atual"):
+    """Handle the 'Escolha o modelo de emissão' transition dialog.
+
+    Since 2026-10-01 the Campinas portal offers two emitters side by side
+    while it migrates to the national IBS/CBS standard (Ato Conjunto
+    RFB/CGIBS nº 4, 30/07/2026): "Emissor Atual" (the old ABRASF layout this
+    automation was originally built for - no "Documento" section, has
+    "Clonar") and "Novo Emissor Ajustado ao Padrão Nacional" (the redesigned
+    layout). The choice isn't sticky - the dialog can reappear on every
+    emission. "Emissor Atual" stays available, per the dialog's own text:
+      - until 30/09/2026 for LC 116/2003 service-list prestadores (expired),
+      - until 31/10/2026 for Simples Nacional contributors,
+      - until 30/11/2026 exclusively for subitens 1.03, 1.05, 1.09 e 16.01.
+    `prefer="atual"` tries to keep using the proven old flow while it's
+    still offered; pass "novo" to force the redesigned flow once the old
+    one's exception window closes. If the preferred option isn't present
+    (e.g. the portal stops offering it), falls back to whichever is shown.
+    """
+    deadline = datetime.datetime.now() + datetime.timedelta(milliseconds=timeout_ms)
+    while datetime.datetime.now() < deadline:
+        result = await page.evaluate(
+            """(prefer) => {
+                const visible = (el) => {
+                    const style = window.getComputedStyle(el);
+                    const rect = el.getBoundingClientRect();
+                    return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+                };
+                const candidates = Array.from(document.querySelectorAll('a,button'))
+                    .filter((el) => visible(el));
+                const atual = candidates.find((el) => (el.innerText || el.textContent || '').includes('Emissor Atual'));
+                const novo = candidates.find((el) => (el.innerText || el.textContent || '').includes('Novo Emissor'));
+                if (!atual && !novo) return {found: false};
+                const chosen = prefer === 'atual' ? (atual || novo) : (novo || atual);
+                const chosenLabel = chosen === atual ? 'atual' : 'novo';
+                chosen.click();
+                return {found: true, chosen: chosenLabel};
+            }""",
+            prefer,
+        )
+        if result and result.get("found"):
+            await page.wait_for_timeout(1500)
+            try:
+                await wait_processing_finished(page, timeout_ms=8000)
+            except Exception:
+                pass
+            return result
+        await page.wait_for_timeout(300)
+    return {"found": False}
+
 async def find_description_field(page, timeout_ms=30000):
     deadline = datetime.datetime.now() + datetime.timedelta(milliseconds=timeout_ms)
     last_error = None
@@ -597,9 +696,12 @@ async def fill_competence_field(page, comp_info, timeout_ms=30000):
             str(meta.get(key) or "")
             for key in ("id", "name", "placeholder", "ariaLabel", "labelText", "text")
         ).lower()
+        # Strip the form's own name prefix before excluding - every field's id
+        # starts with "formnotafiscal", which otherwise false-matches "nota".
+        exclude_text = text.replace("formnotafiscal", "")
         if not re.search(r"\bcompet(e|ê)ncia\b|\bperiodo\b|\bper[ií]odo\b", text):
             return False
-        if re.search(r"\bpesquis|buscar|nota|numero|n[uú]mero|emiss|valor|descricao|descri[cç]ao|retenc", text):
+        if re.search(r"\bpesquis|buscar|\bnota\b|numero|n[uú]mero|emiss|valor|descricao|descri[cç]ao|retenc", exclude_text):
             return False
         return True
 
@@ -619,7 +721,8 @@ async def fill_competence_field(page, comp_info, timeout_ms=30000):
                     const label = el.labels && el.labels.length ? (el.labels[0].innerText || el.labels[0].textContent || '') : '';
                     const wrapperLabel = el.closest('label') ? (el.closest('label').innerText || el.closest('label').textContent || '') : '';
                     const attrs = `${el.id || ''} ${el.name || ''} ${el.getAttribute('placeholder') || ''} ${el.getAttribute('aria-label') || ''} ${label} ${wrapperLabel}`.toLowerCase();
-                    if (/compet[eê]ncia|competencia|per[ií]odo|periodo/.test(attrs) && !/pesquis|buscar|nota|numero|n[uú]mero|emiss|valor|descricao|descri[cç]ao|retenc/.test(attrs)) {
+                    const excludeAttrs = attrs.replace(/formnotafiscal/g, '');
+                    if (/compet[eê]ncia|competencia|per[ií]odo|periodo/.test(attrs) && !/pesquis|buscar|\\bnota\\b|numero|n[uú]mero|emiss|valor|descricao|descri[cç]ao|retenc/.test(excludeAttrs)) {
                         return {
                             id: el.id || '',
                             name: el.name || '',
@@ -647,7 +750,10 @@ async def fill_competence_field(page, comp_info, timeout_ms=30000):
     try:
         if not is_safe_competence_control(candidate):
             return None, None
-        if str(candidate.get("type") or "").lower() == "number" or str(candidate.get("inputMode") or "").lower() in {"numeric", "decimal", "tel"}:
+        # Note: don't exclude on inputMode "numeric" - the real Competência
+        # calendar field (a masked MM/YYYY text input) legitimately uses
+        # inputmode="numeric" for the mobile keypad hint.
+        if str(candidate.get("type") or "").lower() == "number":
             return None, None
         if candidate.get("id"):
             locator = page.locator(f"xpath=//form[@id='formNotaFiscal']//*[@id='{candidate['id']}']").first
@@ -1328,22 +1434,39 @@ async def save_open_invoice_pdf_from_viewer(page, context, pdf_path):
                     }
                 }
                 for (const doc of allDocuments(document)) walk(doc);
-                const src = candidates.find((url) => {
-                    const lower = String(url || '').toLowerCase();
-                    return lower.startsWith('blob:') || lower.includes('.pdf') || lower.includes('download');
-                });
-                if (!src) return null;
-                const response = await fetch(src);
-                const contentType = response.headers.get('content-type') || '';
-                const buffer = await response.arrayBuffer();
-                const bytes = new Uint8Array(buffer);
-                const isPdf = bytes.length > 4 && bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46;
-                if (!isPdf && !contentType.toLowerCase().includes('pdf')) return null;
-                let binary = '';
-                for (let i = 0; i < bytes.length; i += 0x8000) {
-                    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+
+                // The portal (PrimeFaces Extensions pdfviewer.html.jsf) wraps the
+                // real PDF resource URL inside its own iframe src's "file" query
+                // param (URL-encoded) - that inner URL is the one that actually
+                // streams PDF bytes; the wrapper URL itself returns HTML.
+                const resolved = [];
+                for (const url of candidates) {
+                    try {
+                        const parsed = new URL(url, window.location.href);
+                        const inner = parsed.searchParams.get('file');
+                        if (inner) resolved.push(new URL(inner, window.location.href).href);
+                    } catch (e) {}
+                    resolved.push(url);
                 }
-                return btoa(binary);
+
+                for (const src of resolved) {
+                    const lower = String(src || '').toLowerCase();
+                    if (!(lower.startsWith('blob:') || lower.includes('.pdf') || lower.includes('download') || lower.includes('dynamiccontent'))) continue;
+                    try {
+                        const response = await fetch(src);
+                        const contentType = response.headers.get('content-type') || '';
+                        const buffer = await response.arrayBuffer();
+                        const bytes = new Uint8Array(buffer);
+                        const isPdf = bytes.length > 4 && bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46;
+                        if (!isPdf && !contentType.toLowerCase().includes('pdf')) continue;
+                        let binary = '';
+                        for (let i = 0; i < bytes.length; i += 0x8000) {
+                            binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+                        }
+                        return btoa(binary);
+                    } catch (e) {}
+                }
+                return null;
             }
         """)
         if encoded_pdf:
@@ -1605,6 +1728,17 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
     placeholders = ",".join("?" for _ in client_ids)
     cursor.execute(f"SELECT * FROM clients WHERE id IN ({placeholders})", client_ids)
     clients = [dict(row) for row in cursor.fetchall()]
+
+    # The portal's "Documento" section (added 2026-10) requires a Número
+    # Documento Fiscal. Per user instruction: use the increment of the last
+    # emitted invoice number (global sequence across all clients), bumping
+    # it further for each client processed in this same run.
+    cursor.execute(
+        "SELECT MAX(CAST(invoice_number AS INTEGER)) AS max_num FROM emissions "
+        "WHERE status = 'emitida' AND invoice_number IS NOT NULL AND invoice_number != ''"
+    )
+    max_row = cursor.fetchone()
+    next_document_number = (max_row["max_num"] or 0) + 1 if max_row else 1
     conn.close()
     
     portal_cnpj = config.get("portal_cnpj", "07.268.051/0001-48")
@@ -1736,17 +1870,70 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
                 await log_progress("Navegando para o menu de Emissão...", "running", client_id)
                 await open_emission_page(page, timeout_ms=30000)
 
+                # The portal may offer a choice between the old ("Emissor
+                # Atual") and new ("Novo Emissor") layouts during its 2026-10
+                # transition - see handle_emissor_model_choice's docstring.
+                # Prefer the old, already-proven layout while it's offered.
+                model_choice = await handle_emissor_model_choice(page, timeout_ms=5000, prefer="atual")
+                if model_choice.get("found"):
+                    await log_progress(
+                        f"Modelo de emissor selecionado: {'Emissor Atual (ABRASF)' if model_choice.get('chosen') == 'atual' else 'Novo Emissor (padrão nacional)'}.",
+                        "info",
+                        client_id,
+                    )
+
                 await page.wait_for_timeout(2000)
-                
-                # Wait for the note form to load (the note input number)
-                note_input_sel = "xpath=//input[@placeholder='Número da Nota' or contains(@id, ':j_idt')]"
+
+                # Wait for the note form to load. On the old layout this is
+                # "Número da Nota" (by @placeholder); on the new layout (no
+                # placeholders at all) it's "Número Documento Fiscal" (by id).
+                note_input_sel = "xpath=//input[contains(@id, 'idDocumentoNumeroNotaFiscal') or (@placeholder='Número da Nota' and contains(@id, ':j_idt'))]"
                 await page.wait_for_selector(note_input_sel, timeout=20000)
-                
+
+                # The "Documento" section only exists on the new (2026-10)
+                # layout and is mandatory there: a Documento type and a
+                # Número Documento Fiscal. Per user instruction, always use
+                # "Nota Fiscal de Serviços" and the increment of the last
+                # emitted invoice number. Skipped entirely on the old layout,
+                # which has no such section.
+                doc_type_label = page.locator('[id="formNotaFiscal:idDocumentoDocumento_label"]').first
+                if await doc_type_label.count() > 0:
+                    await log_progress(
+                        f"Preenchendo seção Documento (Nota Fiscal de Serviços nº {next_document_number})...",
+                        "running",
+                        client_id,
+                    )
+                    await doc_type_label.click()
+                    await page.wait_for_timeout(500)
+                    doc_type_option = page.locator(
+                        "xpath=//li[contains(@class,'ui-selectonemenu-item') and normalize-space()='Nota Fiscal de Serviços']"
+                    ).first
+                    await doc_type_option.click()
+                    await page.wait_for_timeout(500)
+
+                    doc_number_field = page.locator(note_input_sel).first
+                    await doc_number_field.click()
+                    await page.keyboard.press("Control+A")
+                    await page.keyboard.press("Backspace")
+                    await doc_number_field.press_sequentially(str(next_document_number), delay=40)
+                    await doc_number_field.press("Tab")
+                    await page.wait_for_timeout(300)
+                    next_document_number += 1
+
                 # 4. Clone or fill from scratch
                 cloned = False
-                if ref_note:
+                clonar_btn_sel = "xpath=//*[self::a or self::button][normalize-space()='Clonar' or .//span[normalize-space()='Clonar']]"
+                clone_feature_available = await page.locator(clonar_btn_sel).count() > 0
+                if ref_note and not clone_feature_available:
+                    await log_progress(
+                        "O portal não oferece mais a opção 'Clonar' nesta tela (mudou de layout). "
+                        "Preenchendo os dados manualmente em vez de clonar.",
+                        "warning",
+                        client_id,
+                    )
+                if ref_note and clone_feature_available:
                     await log_progress(f"Clonando a nota de referência: {ref_note}...", "running", client_id)
-                    
+
                     # Try cloning (up to 3 attempts as in the user's script)
                     for attempt in range(1, 4):
                         try:
@@ -2111,6 +2298,32 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
                 await log_progress("Clicando em Emitir Nota Fiscal...", "running", client_id)
                 emit_pdf_future = asyncio.create_task(capture_pdf_response_bytes(context, timeout_ms=30000))
                 await click_emit_invoice_button(page)
+
+                # The portal may reject the submission with a validation
+                # banner (e.g. a required field left empty) instead of
+                # proceeding to emit. Detect that explicitly so it surfaces
+                # as a clear error instead of a confusing PDF-capture failure.
+                await page.wait_for_timeout(1500)
+                validation_errors = await page.evaluate("""
+                    () => {
+                        const visible = (el) => {
+                            const style = window.getComputedStyle(el);
+                            const rect = el.getBoundingClientRect();
+                            return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+                        };
+                        return Array.from(document.querySelectorAll('*'))
+                            .filter((el) => visible(el) && /de preenchimento obrigat[oó]rio/i.test(el.innerText || el.textContent || ''))
+                            .map((el) => (el.innerText || el.textContent || '').replace(/\\s+/g, ' ').trim())
+                            .filter((t, i, arr) => t.length > 0 && arr.indexOf(t) === i)
+                            .slice(0, 5);
+                    }
+                """)
+                if validation_errors:
+                    try:
+                        emit_pdf_future.cancel()
+                    except Exception:
+                        pass
+                    raise RuntimeError(f"Portal rejeitou a emissão por validação: {'; '.join(validation_errors)}")
 
                 # 8. Capture only from explicit visible success messages. If the
                 # portal opens the invoice PDF directly, save that PDF and extract

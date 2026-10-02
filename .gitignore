@@ -28,6 +28,8 @@ mingit/
 frame_dom*.html
 popup_dom*.html
 page_dom*.html
+emissao_dom*.html
+consulta_nota*.html
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
 .claude/.sync-repo-last-push
