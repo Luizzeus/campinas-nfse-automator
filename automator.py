@@ -831,8 +831,10 @@ def extract_invoice_number_from_text(text):
     if not text:
         return None
     patterns = [
-        r"\b(\d{3,})\s*/\s*[a-zA-Z]",
-        r"N[uú]mero\s*/\s*S[ée]rie\s*([\d.]{3,})\s*/",
+        # The new (2026-10) layout's numbering restarts from 1 (e.g. "1 / E"),
+        # unlike the old scheme's always-4-digit numbers - require only 1+ digit.
+        r"\b(\d{1,})\s*/\s*[a-zA-Z]",
+        r"N[uú]mero\s*/\s*S[ée]rie\s*([\d.]{1,})\s*/",
         r"N\s*[º°o]?\s*da\s*Nota\s*[:\-]?\s*([\d.]{3,})",
         r"N[uú]mero\s*da\s*Nota\s*[:\-]?\s*([\d.]{3,})",
         r"NFS-?e\s*n\s*[º°o]?\s*[:\-]?\s*([\d.]{3,})",
