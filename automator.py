@@ -1732,15 +1732,25 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
     clients = [dict(row) for row in cursor.fetchall()]
 
     # The portal's "Documento" section (added 2026-10) requires a Número
-    # Documento Fiscal. Per user instruction: use the increment of the last
-    # emitted invoice number (global sequence across all clients), bumping
-    # it further for each client processed in this same run.
-    cursor.execute(
-        "SELECT MAX(CAST(invoice_number AS INTEGER)) AS max_num FROM emissions "
-        "WHERE status = 'emitida' AND invoice_number IS NOT NULL AND invoice_number != ''"
-    )
-    max_row = cursor.fetchone()
-    next_document_number = (max_row["max_num"] or 0) + 1 if max_row else 1
+    # Documento Fiscal. Per user instruction: increment it from the last one
+    # used, every run. This is NOT the same counter as invoice_number (the
+    # real NFSe number, separately assigned by the portal in its own série -
+    # e.g. "1", "2"... since the 2026-10 redesign), so it's tracked on its
+    # own in system_config, persisted across runs.
+    cursor.execute("SELECT value FROM system_config WHERE key = 'nfse_last_document_number'")
+    last_doc_row = cursor.fetchone()
+    if last_doc_row and last_doc_row["value"]:
+        next_document_number = int(last_doc_row["value"]) + 1
+    else:
+        # One-time bootstrap for the first run after this feature was added:
+        # fall back to the old invoice_number sequence (last used before the
+        # portal redesign) so we don't start over from 1 and collide with it.
+        cursor.execute(
+            "SELECT MAX(CAST(invoice_number AS INTEGER)) AS max_num FROM emissions "
+            "WHERE status = 'emitida' AND invoice_number IS NOT NULL AND invoice_number != ''"
+        )
+        max_row = cursor.fetchone()
+        next_document_number = (max_row["max_num"] or 0) + 1 if max_row else 1
     conn.close()
     
     portal_cnpj = config.get("portal_cnpj", "07.268.051/0001-48")
@@ -1920,6 +1930,17 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
                     await doc_number_field.press_sequentially(str(next_document_number), delay=40)
                     await doc_number_field.press("Tab")
                     await page.wait_for_timeout(300)
+                    # Persist immediately (not just increment in memory) so the
+                    # next run - even if this one crashes right after - never
+                    # reuses this number.
+                    doc_num_conn = get_db_connection()
+                    doc_num_conn.execute(
+                        "INSERT INTO system_config (key, value) VALUES ('nfse_last_document_number', ?) "
+                        "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                        (str(next_document_number),),
+                    )
+                    doc_num_conn.commit()
+                    doc_num_conn.close()
                     next_document_number += 1
 
                 # 4. Clone or fill from scratch
