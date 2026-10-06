@@ -16,6 +16,7 @@ INVOICES_DIR = os.path.join(BASE_DIR, "invoices")
 SCREENSHOTS_DIR = os.path.join(BASE_DIR, "screenshots")
 LOGIN_URL = "https://novanfse.campinas.sp.gov.br/notafiscal/paginas/portal/index.html#/login"
 PRINCIPAL_URL = "https://novanfse.campinas.sp.gov.br/notafiscal/paginas/portal/index.html#/principal"
+NEW_EMISSOR_LIST_URL = "https://novanfse.campinas.sp.gov.br/notafiscal/paginas/notafiscalnacional/notaFiscalNacionalList.jsf"
 VALIDATION_ONLY = False
 VALIDATION_PAUSE_SECONDS = 900
 DESCRIPTION_SELECTORS = [
@@ -626,6 +627,499 @@ async def handle_emissor_model_choice(page, timeout_ms=8000, prefer="atual"):
             return result
         await page.wait_for_timeout(300)
     return {"found": False}
+
+# --- Novo Emissor Ajustado ao Padrão Nacional (2026-10 wizard) -------------
+# The new emitter is a 5-step PrimeFaces wizard (Pessoas > Serviço > Valores >
+# Informações Complementares > Emitir NFS-e) served from
+# .../notafiscalnacional/notaFiscalNacionalData.jsf. Its component ids are
+# generated, so every control below is located by its visible label instead.
+NEW_EMISSOR_DEFAULTS = {
+    # system_config key: default (values the user picks manually in the portal)
+    "nfse_codigo_tributacao_nacional": "01.06.01",
+    "nfse_codigo_complementar_municipal": "01.06.01.001",
+    "nfse_item_nbs": "1.1510.00.00",
+    "nfse_indicador_operacao": "100301",
+    "nfse_situacao_pis_cofins": "Nenhum",
+    "nfse_tipo_retencao_pis_cofins_csll": "PIS/COFINS/CSLL Não Retidos",
+    "nfse_classificacao_tributaria": "000001",
+}
+
+# The final 'Emitir NFS-e' link (a disabled twin lives in the preview dialog).
+NEW_EMISSOR_EMIT_SELECTOR = 'a[data-test="emitir-nfse"]:not(.ui-state-disabled)'
+
+_WIZARD_JS_LIB = """
+    const visible = (el) => {
+        if (!el) return false;
+        const style = window.getComputedStyle(el);
+        const rect = el.getBoundingClientRect();
+        return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+    };
+    // Accent-insensitive: the portal itself misspells labels (e.g. "Classificaçǎo").
+    const norm = (s) => (s || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')
+        .replace(/\\*/g, '').replace(/\\s+/g, ' ').trim().toLowerCase();
+    const follows = (a, b) => Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) && !a.contains(b);
+    // Innermost visible elements whose whole text is `text` (asterisks ignored).
+    const findByText = (text, after) => {
+        const target = norm(text);
+        const hits = Array.from(document.querySelectorAll('label,span,div,td,th,b,strong,legend,h1,h2,h3,h4,h5,p'))
+            .filter((el) => norm(el.textContent) === target && visible(el) && (!after || follows(after, el)));
+        return hits.filter((el) => !hits.some((other) => other !== el && el.contains(other)));
+    };
+    const anchorFor = (args) => {
+        let after = null;
+        if (args.after) {
+            after = findByText(args.after, null)[0] || null;
+            if (!after) return {error: 'Seção não encontrada: ' + args.after};
+        }
+        let labels = findByText(args.label, after);
+        // The mandatory asterisk lives in a sibling span inside the <label>.
+        const starred = (el) => (el.closest('label') || el).textContent.includes('*');
+        if (args.star === true) labels = labels.filter(starred);
+        if (args.star === false) labels = labels.filter((el) => !starred(el));
+        const label = labels[args.nth || 0];
+        if (!label) return {error: 'Rótulo não encontrado: ' + args.label};
+        return {label};
+    };
+    const radioLabel = (rb) => {
+        const input = rb.matches('input') ? rb : rb.querySelector('input');
+        let lab = input && input.id ? document.querySelector('label[for="' + CSS.escape(input.id) + '"]') : null;
+        if (!lab) lab = rb.nextElementSibling;
+        if (!lab && rb.closest('td')) lab = rb.closest('td').nextElementSibling;
+        return norm(lab ? lab.textContent : '');
+    };
+"""
+
+async def wizard_settle(page, timeout_ms=60000):
+    """Wait for the wizard's PrimeFaces AJAX round-trip ('Processando...') to finish."""
+    await page.wait_for_timeout(400)
+    # The 'Processando...' SweetAlert stays in the DOM after closing (only its
+    # --show-modal class is removed), so a plain visibility check never clears.
+    await page.wait_for_function("() => !document.querySelector('.swal-overlay--show-modal')", timeout=timeout_ms)
+    try:
+        await page.wait_for_function(
+            "() => !(window.PrimeFaces && PrimeFaces.ajax && PrimeFaces.ajax.Queue) || PrimeFaces.ajax.Queue.isEmpty()",
+            timeout=timeout_ms,
+        )
+    except Exception:
+        pass
+    await page.wait_for_timeout(300)
+
+async def wizard_messages(page):
+    """Visible validation/error messages currently shown by the wizard."""
+    try:
+        return await page.evaluate(
+            """() => {""" + _WIZARD_JS_LIB + """
+                const sel = '.ui-messages-error, .ui-messages-warn, .ui-message-error, .ui-growl-item, .ui-messages-fatal';
+                return Array.from(document.querySelectorAll(sel))
+                    .filter(visible)
+                    .map((el) => (el.innerText || el.textContent || '').replace(/\\s+/g, ' ').trim())
+                    .filter((t, i, arr) => t && arr.indexOf(t) === i)
+                    .slice(0, 6);
+            }"""
+        )
+    except Exception:
+        return []
+
+async def wizard_control(page, label, kind="text", after=None, star=None, nth=0, timeout_ms=15000):
+    """Locate the control that follows a visible label in the wizard.
+
+    kind: 'text' (input/textarea), 'menu' (PrimeFaces selectOneMenu) or
+    'checkbox'. `after` restricts the search to labels below a section heading;
+    `star` requires (True) or forbids (False) the mandatory-field asterisk.
+    Returns (locator, info) where info has value/text/disabled/checked.
+    """
+    token = f"nfse-{kind}-{nth}-{datetime.datetime.now().timestamp()}"
+    deadline = datetime.datetime.now() + datetime.timedelta(milliseconds=timeout_ms)
+    info = None
+    while datetime.datetime.now() < deadline:
+        info = await page.evaluate(
+            """(args) => {""" + _WIZARD_JS_LIB + """
+                const found = anchorFor(args);
+                if (found.error) return found;
+                const selectors = {
+                    text: 'input, textarea',
+                    menu: '.ui-selectonemenu',
+                    checkbox: '.ui-chkbox, input[type=checkbox]',
+                };
+                for (const el of document.querySelectorAll(selectors[args.kind])) {
+                    if (!follows(found.label, el)) continue;
+                    if (args.kind === 'text') {
+                        if (el.tagName === 'INPUT' && !['text', 'tel', 'email', 'number', ''].includes((el.type || '').toLowerCase())) continue;
+                        if (el.closest('.ui-selectonemenu, .ui-chkbox, .ui-radiobutton, .ui-selectonemenu-panel')) continue;
+                        if (!visible(el)) continue;
+                    } else if (args.kind === 'checkbox') {
+                        if (el.matches('input') && el.closest('.ui-chkbox')) continue;
+                        if (!visible(el)) continue;
+                    } else if (!visible(el)) continue;
+                    el.setAttribute('data-nfse-auto', args.token);
+                    const box = el.querySelector ? el.querySelector('.ui-chkbox-box') : null;
+                    const labelEl = el.querySelector ? el.querySelector('.ui-selectonemenu-label') : null;
+                    return {
+                        id: el.id || '',
+                        value: 'value' in el ? (el.value || '') : '',
+                        text: labelEl ? (labelEl.textContent || '').replace(/\\s+/g, ' ').trim() : '',
+                        disabled: Boolean(el.disabled || el.readOnly || el.classList.contains('ui-state-disabled') || (box && box.classList.contains('ui-state-disabled'))),
+                        checked: Boolean(box ? box.classList.contains('ui-state-active') : el.checked),
+                    };
+                }
+                return {error: 'Campo não encontrado após o rótulo: ' + args.label};
+            }""",
+            {"label": label, "kind": kind, "after": after, "star": star, "nth": nth, "token": token},
+        )
+        if info and not info.get("error"):
+            return page.locator(f'[data-nfse-auto="{token}"]').first, info
+        await page.wait_for_timeout(400)
+    raise PlaywrightTimeoutError(f"Novo emissor: {(info or {}).get('error') or 'campo não localizado'} ({label})")
+
+async def wizard_label_visible(page, label, timeout_ms=20000):
+    deadline = datetime.datetime.now() + datetime.timedelta(milliseconds=timeout_ms)
+    while datetime.datetime.now() < deadline:
+        try:
+            found = await page.evaluate(
+                """(label) => {""" + _WIZARD_JS_LIB + """
+                    return findByText(label, null).length > 0;
+                }""",
+                label,
+            )
+            if found:
+                return True
+        except Exception:
+            pass
+        await page.wait_for_timeout(400)
+    return False
+
+async def wizard_select_menu(page, label, option_prefix, after=None, timeout_ms=20000):
+    """Pick the option starting with `option_prefix` in the selectOneMenu under `label`."""
+    prefix = re.sub(r"\s+", " ", str(option_prefix)).strip().lower()
+    menu, info = await wizard_control(page, label, kind="menu", after=after, timeout_ms=timeout_ms)
+    if info.get("text", "").lower().startswith(prefix):
+        return info["text"]
+    if info.get("disabled"):
+        raise RuntimeError(f"Novo emissor: o campo '{label}' está bloqueado com '{info.get('text')}' (esperado '{option_prefix}').")
+    await menu.scroll_into_view_if_needed()
+    await menu.click()
+    if info.get("id"):
+        panel = page.locator(f'[id="{info["id"]}_panel"]').first
+    else:
+        panel = page.locator(".ui-selectonemenu-panel:visible").last
+    await panel.wait_for(state="visible", timeout=10000)
+    filter_input = panel.locator("input.ui-selectonemenu-filter").first
+    if await filter_input.count() and await filter_input.is_visible():
+        await filter_input.fill(str(option_prefix))
+        await page.wait_for_timeout(800)
+    deadline = datetime.datetime.now() + datetime.timedelta(milliseconds=timeout_ms)
+    options_seen = []
+    while datetime.datetime.now() < deadline:
+        items = panel.locator("li.ui-selectonemenu-item")
+        options_seen = []
+        for index in range(await items.count()):
+            item = items.nth(index)
+            text = re.sub(r"\s+", " ", (await item.inner_text()) or "").strip()
+            options_seen.append(text)
+            if text.lower().startswith(prefix) and await item.is_visible():
+                await item.click()
+                await wizard_settle(page)
+                _, after_info = await wizard_control(page, label, kind="menu", after=after, timeout_ms=timeout_ms)
+                if not after_info.get("text", "").lower().startswith(prefix):
+                    raise RuntimeError(f"Novo emissor: '{label}' ficou com '{after_info.get('text')}' em vez de '{option_prefix}'.")
+                return after_info["text"]
+        await page.wait_for_timeout(500)
+    await page.keyboard.press("Escape")
+    raise RuntimeError(f"Novo emissor: opção '{option_prefix}' não existe em '{label}'. Opções: {options_seen[:12]}")
+
+async def wizard_radio(page, option, after, click=True):
+    """Read (and optionally select) the radio labelled `option` that follows the `after` text."""
+    token = f"nfse-radio-{datetime.datetime.now().timestamp()}"
+    result = await page.evaluate(
+        """(args) => {""" + _WIZARD_JS_LIB + """
+            const anchor = findByText(args.after, null)[0];
+            if (!anchor) return {found: false, error: 'Seção não encontrada: ' + args.after};
+            const radios = Array.from(document.querySelectorAll('.ui-radiobutton, input[type=radio]'))
+                .filter((rb) => !(rb.matches('input') && rb.closest('.ui-radiobutton')) && follows(anchor, rb) && visible(rb));
+            const rb = radios.find((item) => radioLabel(item) === norm(args.option));
+            if (!rb) return {found: false, error: 'Opção não encontrada: ' + args.option};
+            const box = rb.querySelector ? rb.querySelector('.ui-radiobutton-box') : null;
+            const input = rb.matches('input') ? rb : rb.querySelector('input');
+            const active = Boolean(box ? box.classList.contains('ui-state-active') : (input && input.checked));
+            const disabled = Boolean((box && box.classList.contains('ui-state-disabled')) || (input && input.disabled));
+            const wantsClick = Boolean(args.click && !active && !disabled);
+            if (wantsClick) (box || rb).setAttribute('data-nfse-auto', args.token);
+            return {found: true, active, disabled, clicked: wantsClick};
+        }""",
+        {"option": option, "after": after, "click": click, "token": token},
+    )
+    if result.get("clicked"):
+        # A real mouse click: PrimeFaces ignores a synthetic el.click() here.
+        await page.locator(f'[data-nfse-auto="{token}"]').first.click()
+        await wizard_settle(page)
+    return result
+
+async def wizard_advance(page, expect_label, step_name, timeout_ms=30000):
+    """Click 'Avançar' and confirm the wizard actually moved to the next step."""
+    button = await first_visible_locator(
+        page,
+        "xpath=//*[self::button or self::a][normalize-space()='Avançar' or .//span[normalize-space()='Avançar']]",
+        timeout_ms=10000,
+    )
+    await button.scroll_into_view_if_needed()
+    await button.click()
+    await wizard_settle(page)
+    if expect_label.startswith("css="):
+        try:
+            await first_visible_locator(page, expect_label[4:], timeout_ms=timeout_ms)
+            return
+        except PlaywrightTimeoutError:
+            pass
+    elif await wizard_label_visible(page, expect_label, timeout_ms=timeout_ms):
+        return
+    messages = await wizard_messages(page)
+    detail = "; ".join(messages) if messages else "o portal não exibiu mensagem"
+    raise RuntimeError(f"Novo emissor: não avançou da etapa '{step_name}': {detail}")
+
+async def open_new_emissor_page(page, timeout_ms=30000):
+    """Open the emission entry that offers the new emitter (notaFiscalNacionalList.jsf).
+
+    The legacy shortcut (emissaoNotaFiscalList) lands straight on the old
+    form without the model-choice dialog, so it can't be used here. Returns
+    the menu entries found, for diagnostics.
+    """
+    # The logged-in session opens the page directly by URL, which doesn't
+    # depend on the sidebar being rendered. Fall back to the menu entry.
+    try:
+        await page.goto(NEW_EMISSOR_LIST_URL, wait_until="domcontentloaded")
+        await page.wait_for_timeout(2000)
+        if "notafiscalnacional" in page.url.lower():
+            return {"clicked": False, "entries": []}
+    except Exception:
+        pass
+    await ensure_emission_menu_ready(page, timeout_ms=timeout_ms)
+    await page.wait_for_timeout(1000)
+    result = await page.evaluate(
+        """() => {
+            const entries = Array.from(document.querySelectorAll('a,button,li,span,div'))
+                .map((el) => ({
+                    el,
+                    text: (el.innerText || el.textContent || '').replace(/\\s+/g, ' ').trim(),
+                    target: (el.getAttribute('onclick') || '') + ' ' + (el.getAttribute('href') || ''),
+                }))
+                .filter((item) => /notafiscal/i.test(item.target));
+            const hit = entries.find((item) => /notaFiscalNacional/i.test(item.target));
+            if (hit) hit.el.click();
+            return {
+                clicked: Boolean(hit),
+                entries: entries.map((item) => item.text.slice(0, 40) + ' => ' + item.target.trim().slice(0, 160)).slice(0, 20),
+            };
+        }"""
+    )
+    if not result.get("clicked"):
+        await page.goto(NEW_EMISSOR_LIST_URL, wait_until="domcontentloaded")
+    await page.wait_for_timeout(2000)
+    return result
+
+async def is_new_emissor_wizard(page, timeout_ms=15000):
+    deadline = datetime.datetime.now() + datetime.timedelta(milliseconds=timeout_ms)
+    while datetime.datetime.now() < deadline:
+        if "notafiscalnacionaldata" in page.url.lower() and await wizard_label_visible(page, "Data Competência", timeout_ms=1000):
+            return True
+        if await page.locator("xpath=//input[contains(@id, 'idDocumentoNumeroNotaFiscal') or @placeholder='Número da Nota']").count():
+            return False
+        await page.wait_for_timeout(400)
+    return False
+
+async def fill_new_emissor_wizard(page, client, desc_text, settings, log, debug_prefix=None):
+    """Fill the new emitter's wizard up to the final review step ('Emitir NFS-e').
+
+    Does NOT click the final 'Emitir NFS-e' button. `log` is an async
+    callable(message, status). With `debug_prefix`, saves the DOM and a
+    screenshot of each step (emissao_dom_novo_*.html / screenshots).
+    """
+    doc_formatted = client["cnpj_cpf"]
+    doc_digits = re.sub(r"\D+", "", doc_formatted)
+    invoice_value = float(client["invoice_value"])
+    value_br = f"{invoice_value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+    async def snapshot(step):
+        if not debug_prefix:
+            return
+        try:
+            with open(os.path.join(BASE_DIR, f"emissao_dom_novo_{step}.html"), "w", encoding="utf-8") as f:
+                f.write(await page.content())
+            await page.screenshot(path=f"{debug_prefix}_{step}.png", full_page=True)
+        except Exception:
+            pass
+
+    try:
+        # ---- Etapa 1: Pessoas -------------------------------------------
+        # Data Competência is left as the portal's default (today), as the
+        # month being billed goes in the service description.
+        await log("Novo emissor - etapa Pessoas: localizando o tomador...", "running")
+        nacional = await wizard_radio(page, "Nacional", after="TOMADOR SERVIÇO")
+        if not nacional.get("found"):
+            raise RuntimeError(f"Novo emissor: {nacional.get('error')}")
+        search_field, _ = await wizard_control(page, "CPF/CNPJ", after="TOMADOR SERVIÇO", star=False)
+        await search_field.click()
+        await page.keyboard.press("Control+A")
+        await page.keyboard.press("Backspace")
+        await search_field.press_sequentially(doc_digits, delay=60)
+        if re.sub(r"\D+", "", await search_field.input_value()) != doc_digits:
+            # The input mask can truncate typed digits - set the formatted value directly.
+            await search_field.evaluate(
+                """(el, val) => {
+                    el.value = val;
+                    el.dispatchEvent(new Event('input', {bubbles: true}));
+                    el.dispatchEvent(new Event('change', {bubbles: true}));
+                }""",
+                doc_formatted,
+            )
+        await page.wait_for_timeout(300)
+        clicked_lookup = await search_field.evaluate(
+            """(el) => {
+                const visible = (n) => { const r = n.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+                const nodes = Array.from(document.querySelectorAll('a, button, input[type=image], img'));
+                const next = nodes.find((n) => (el.compareDocumentPosition(n) & Node.DOCUMENT_POSITION_FOLLOWING) && visible(n));
+                if (!next) return false;
+                (next.closest('a, button') || next).click();
+                return true;
+            }"""
+        )
+        if not clicked_lookup:
+            raise RuntimeError("Novo emissor: não encontrei a lupa de pesquisa do tomador.")
+        await wizard_settle(page)
+
+        tomador_doc = ""
+        tomador_name = ""
+        for _ in range(20):
+            _, doc_info = await wizard_control(page, "CPF/CNPJ", after="TOMADOR SERVIÇO", star=True)
+            _, name_info = await wizard_control(page, "Nome/Nome Empresarial", after="TOMADOR SERVIÇO", star=True)
+            tomador_doc = re.sub(r"\D+", "", doc_info.get("value", ""))
+            tomador_name = name_info.get("value", "").strip()
+            if tomador_doc == doc_digits and tomador_name:
+                break
+            await page.wait_for_timeout(500)
+        if tomador_doc != doc_digits or not tomador_name:
+            messages = await wizard_messages(page)
+            raise RuntimeError(
+                f"Novo emissor: a pesquisa do tomador {doc_formatted} não preencheu os dados cadastrais "
+                f"(CPF/CNPJ='{tomador_doc}', nome='{tomador_name}'). {'; '.join(messages)}"
+            )
+        await log(f"Tomador carregado pelo portal: {tomador_name}", "success")
+
+        compra_gov = await wizard_radio(page, "Não", after="A operação se trata de uma compra governamental?")
+        if not compra_gov.get("found"):
+            raise RuntimeError(f"Novo emissor: {compra_gov.get('error')}")
+        checkbox, check_info = await wizard_control(page, "Próprio Tomador Serviço", kind="checkbox", after="DESTINATÁRIO")
+        if not check_info.get("checked"):
+            box = checkbox.locator(".ui-chkbox-box")
+            await (box.first if await box.count() else checkbox).click()
+            await wizard_settle(page)
+        await snapshot("1_pessoas")
+        await wizard_advance(page, "Código Tributação Nacional", "Pessoas")
+
+        # ---- Etapa 2: Serviço -------------------------------------------
+        await log("Novo emissor - etapa Serviço: códigos de tributação, descrição e NBS...", "running")
+        chosen = await wizard_select_menu(page, "Código Tributação Nacional", settings["nfse_codigo_tributacao_nacional"])
+        await log(f"Código Tributação Nacional: {chosen}", "info")
+        chosen = await wizard_select_menu(page, "Código Complementar Municipal", settings["nfse_codigo_complementar_municipal"])
+        await log(f"Código Complementar Municipal: {chosen}", "info")
+        desc_field, _ = await wizard_control(page, "Descrição Serviço")
+        await desc_field.click()
+        await desc_field.fill(desc_text)
+        await desc_field.press("Tab")
+        await wizard_settle(page)
+        chosen = await wizard_select_menu(page, "Item NBS Correspondente ao Serviço Prestado", settings["nfse_item_nbs"])
+        await log(f"Item NBS: {chosen}", "info")
+        chosen = await wizard_select_menu(page, "Indicador da Operação", settings["nfse_indicador_operacao"])
+        await log(f"Indicador da Operação: {chosen}", "info")
+        desc_field, desc_info = await wizard_control(page, "Descrição Serviço")
+        if desc_info.get("value", "").strip() != desc_text.strip():
+            # An AJAX re-render can wipe the textarea - type it again.
+            await desc_field.fill(desc_text)
+            await desc_field.press("Tab")
+            await wizard_settle(page)
+        await snapshot("2_servico")
+        await wizard_advance(page, "Valor Serviço Prestado", "Serviço")
+
+        # ---- Etapa 3: Valores -------------------------------------------
+        await log(f"Novo emissor - etapa Valores: R$ {value_br}...", "running")
+        applied_value = None
+        for typed in (value_br, re.sub(r"\D+", "", value_br)):
+            value_field, _ = await wizard_control(page, "Valor Serviço Prestado")
+            await value_field.click()
+            await page.keyboard.press("Control+A")
+            await page.keyboard.press("Backspace")
+            await value_field.press_sequentially(typed, delay=60)
+            await value_field.press("Tab")
+            await wizard_settle(page)
+            _, value_info = await wizard_control(page, "Valor Serviço Prestado")
+            applied_value = parse_brl_money(value_info.get("value"))
+            if applied_value is not None and abs(applied_value - invoice_value) < 0.005:
+                break
+        if applied_value is None or abs(applied_value - invoice_value) >= 0.005:
+            raise RuntimeError(f"Novo emissor: Valor Serviço Prestado ficou '{applied_value}' em vez de {value_br}.")
+
+        wants_retention = "retido" in (client.get("retention_type") or "").lower()
+        wanted_option = "Sim" if wants_retention else "Não"
+        iss = await wizard_radio(page, wanted_option, after="Há Retenção do ISSQN pelo Tomador ou pelo Intermediário")
+        if not iss.get("found"):
+            # The portal hides the question when retention doesn't apply
+            # (e.g. tomador pessoa física / fora do município).
+            await log(
+                "O portal não oferece a opção de retenção do ISSQN para este tomador.",
+                "warning" if wants_retention else "info",
+            )
+        elif not iss.get("active") and not iss.get("clicked"):
+            await log(
+                f"O portal fixou a retenção do ISSQN diferente do cadastro do cliente (cadastro: {wanted_option}). Mantendo a regra do portal.",
+                "warning",
+            )
+        else:
+            await log(f"Retenção do ISSQN pelo tomador: {wanted_option}", "info")
+
+        await wizard_select_menu(page, "Situação Tributária PIS/COFINS", settings["nfse_situacao_pis_cofins"])
+        await wizard_select_menu(page, "Tipo de Retenção do PIS/COFINS/CSLL", settings["nfse_tipo_retencao_pis_cofins_csll"])
+        chosen = await wizard_select_menu(page, "Classificação Tributária", settings["nfse_classificacao_tributaria"])
+        await log(f"Classificação Tributária IBS/CBS: {chosen}", "info")
+        _, value_info = await wizard_control(page, "Valor Serviço Prestado")
+        if abs((parse_brl_money(value_info.get("value")) or 0) - invoice_value) >= 0.005:
+            raise RuntimeError(f"Novo emissor: o valor do serviço mudou para '{value_info.get('value')}' após as seleções de tributação.")
+        await snapshot("3_valores")
+        await wizard_advance(page, "Número Documento Responsabilidade Técnica", "Valores")
+
+        # ---- Etapa 4: Informações Complementares (nada a preencher) ------
+        await snapshot("4_info_complementares")
+        await wizard_advance(page, "css=" + NEW_EMISSOR_EMIT_SELECTOR, "Informações Complementares")
+
+        # ---- Etapa 5: revisão da DPS -------------------------------------
+        review = await page.evaluate("() => Array.from(document.querySelectorAll('input, textarea')).map((el) => el.value || '').join('\\n')")
+        review = review.replace(" ", " ")
+        if doc_digits not in re.sub(r"[.\-/]", "", review):
+            raise RuntimeError("Novo emissor: a revisão final não mostra o CPF/CNPJ do tomador esperado.")
+        if desc_text.strip() not in review:
+            raise RuntimeError("Novo emissor: a revisão final não mostra a descrição do serviço esperada.")
+        if f"R$ {value_br}" not in review:
+            raise RuntimeError(f"Novo emissor: a revisão final não mostra o valor R$ {value_br}.")
+        await snapshot("5_revisao")
+        await log("Novo emissor: revisão final conferida (tomador, descrição e valor).", "success")
+    except Exception:
+        await snapshot("erro")
+        raise
+
+async def click_new_emissor_emit_button(page):
+    """Click the final 'Emitir NFS-e' button of the wizard (not the step header of the same name)."""
+    button = await first_visible_locator(page, NEW_EMISSOR_EMIT_SELECTOR, timeout_ms=10000)
+    await button.scroll_into_view_if_needed()
+    await button.click()
+    await page.wait_for_timeout(1000)
+    # PrimeFaces may ask for a confirmation before issuing.
+    confirm = page.locator(
+        "xpath=//div[contains(@class,'ui-confirm-dialog') or contains(@class,'ui-dialog')][not(contains(@style,'display: none'))]"
+        "//*[self::button or self::a][normalize-space()='Sim' or normalize-space()='Confirmar' or .//span[normalize-space()='Sim' or normalize-space()='Confirmar']]"
+    )
+    for index in range(await confirm.count()):
+        item = confirm.nth(index)
+        if await item.is_visible():
+            await item.click()
+            break
 
 async def find_description_field(page, timeout_ms=30000):
     deadline = datetime.datetime.now() + datetime.timedelta(milliseconds=timeout_ms)
@@ -1713,11 +2207,13 @@ def pdf_text_matches_client(pdf_text, client):
     normalized_name = re.sub(r"\s+", " ", normalized_name).strip()
     return bool(normalized_name and normalized_name in normalized_text)
 
-async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None):
+async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None, dry_run=False, dry_run_pause_seconds=20):
     """
     Automate invoice issuance for selected client IDs.
     ref_date: datetime.date (default is today)
     progress_callback: async function(msg_dict)
+    dry_run: fill the form up to the final review and stop - nothing is
+        emitted and nothing is written to the emissions history.
     """
     # 1. Fetch configurations
     conn = get_db_connection()
@@ -1756,6 +2252,10 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
     portal_cnpj = config.get("portal_cnpj", "07.268.051/0001-48")
     portal_password = config.get("portal_password", "5C0A11EF")
     headless = config.get("headless", "false").lower() == "true"
+    # Which emitter to pick in the portal's transition dialog: "novo" (padrão
+    # nacional, mandatory for Simples Nacional from 01/11/2026) or "atual".
+    emissor_model = (config.get("nfse_emissor_model") or "novo").strip().lower()
+    emissor_settings = {key: (config.get(key) or default) for key, default in NEW_EMISSOR_DEFAULTS.items()}
     
     # Calculate competence info
     comp_info = get_competence_info(ref_date)
@@ -1790,7 +2290,9 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
         
         # Open in maximized viewport if headed
         context = await browser.new_context(
-            viewport={"width": 1920, "height": 1080} if not headless else None
+            # Headed: follow the real window size - a fixed 1920x1080 viewport on a
+            # smaller/scaled screen clips the page and leaves the reCAPTCHA unclickable.
+            **({"viewport": {"width": 1920, "height": 1080}} if headless else {"no_viewport": True})
         )
         page = await context.new_page()
         
@@ -1880,13 +2382,17 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
                 # Navigate to note emission page
                 # Expand sidebar menu
                 await log_progress("Navegando para o menu de Emissão...", "running", client_id)
-                await open_emission_page(page, timeout_ms=30000)
+                if emissor_model == "novo":
+                    menu_info = await open_new_emissor_page(page, timeout_ms=30000)
+                    if dry_run:
+                        await log_progress(f"Entradas de menu de nota fiscal: {menu_info.get('entries')} | URL: {page.url}", "info", client_id)
+                else:
+                    await open_emission_page(page, timeout_ms=30000)
 
                 # The portal may offer a choice between the old ("Emissor
                 # Atual") and new ("Novo Emissor") layouts during its 2026-10
                 # transition - see handle_emissor_model_choice's docstring.
-                # Prefer the old, already-proven layout while it's offered.
-                model_choice = await handle_emissor_model_choice(page, timeout_ms=5000, prefer="atual")
+                model_choice = await handle_emissor_model_choice(page, timeout_ms=5000, prefer=emissor_model)
                 if model_choice.get("found"):
                     await log_progress(
                         f"Modelo de emissor selecionado: {'Emissor Atual (ABRASF)' if model_choice.get('chosen') == 'atual' else 'Novo Emissor (padrão nacional)'}.",
@@ -1894,433 +2400,456 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
                         client_id,
                     )
 
-                await page.wait_for_timeout(2000)
-
-                # Wait for the note form to load. On the old layout this is
-                # "Número da Nota" (by @placeholder); on the new layout (no
-                # placeholders at all) it's "Número Documento Fiscal" (by id).
-                note_input_sel = "xpath=//input[contains(@id, 'idDocumentoNumeroNotaFiscal') or (@placeholder='Número da Nota' and contains(@id, ':j_idt'))]"
-                await page.wait_for_selector(note_input_sel, timeout=20000)
-
-                # The "Documento" section only exists on the new (2026-10)
-                # layout and is mandatory there: a Documento type and a
-                # Número Documento Fiscal. Per user instruction, always use
-                # "Nota Fiscal de Serviços" and the increment of the last
-                # emitted invoice number. Skipped entirely on the old layout,
-                # which has no such section.
-                doc_type_label = page.locator('[id="formNotaFiscal:idDocumentoDocumento_label"]').first
-                if await doc_type_label.count() > 0:
-                    await log_progress(
-                        f"Preenchendo seção Documento (Nota Fiscal de Serviços nº {next_document_number})...",
-                        "running",
-                        client_id,
+                is_wizard = await is_new_emissor_wizard(
+                    page, timeout_ms=15000 if model_choice.get('chosen') == 'novo' else 4000
+                )
+                if emissor_model == "novo" and not is_wizard:
+                    raise RuntimeError(
+                        f"Não consegui abrir o Novo Emissor (padrão nacional). URL atual: {page.url}. "
+                        "Para usar o emissor antigo, defina nfse_emissor_model = 'atual' na configuração."
                     )
-                    await doc_type_label.click()
-                    await page.wait_for_timeout(500)
-                    doc_type_option = page.locator(
-                        "xpath=//li[contains(@class,'ui-selectonemenu-item') and normalize-space()='Nota Fiscal de Serviços']"
-                    ).first
-                    await doc_type_option.click()
-                    await page.wait_for_timeout(500)
+                if is_wizard:
+                    async def wizard_log(message, status="info"):
+                        await log_progress(message, status, client_id)
 
-                    doc_number_field = page.locator(note_input_sel).first
-                    await doc_number_field.click()
-                    await page.keyboard.press("Control+A")
-                    await page.keyboard.press("Backspace")
-                    await doc_number_field.press_sequentially(str(next_document_number), delay=40)
-                    await doc_number_field.press("Tab")
-                    await page.wait_for_timeout(300)
-                    # Persist immediately (not just increment in memory) so the
-                    # next run - even if this one crashes right after - never
-                    # reuses this number.
-                    doc_num_conn = get_db_connection()
-                    doc_num_conn.execute(
-                        "INSERT INTO system_config (key, value) VALUES ('nfse_last_document_number', ?) "
-                        "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
-                        (str(next_document_number),),
-                    )
-                    doc_num_conn.commit()
-                    doc_num_conn.close()
-                    next_document_number += 1
+                    debug_prefix = os.path.join(screenshot_folder, f"{slugify_name(client_name)}_novo_emissor") if dry_run else None
+                    await fill_new_emissor_wizard(page, client, desc_text, emissor_settings, wizard_log, debug_prefix=debug_prefix)
+                else:
+                    await page.wait_for_timeout(2000)
 
-                # 4. Clone or fill from scratch
-                cloned = False
-                clonar_btn_sel = "xpath=//*[self::a or self::button][normalize-space()='Clonar' or .//span[normalize-space()='Clonar']]"
-                clone_feature_available = await page.locator(clonar_btn_sel).count() > 0
-                if ref_note and not clone_feature_available:
-                    await log_progress(
-                        "O portal não oferece mais a opção 'Clonar' nesta tela (mudou de layout). "
-                        "Preenchendo os dados manualmente em vez de clonar.",
-                        "warning",
-                        client_id,
-                    )
-                if ref_note and clone_feature_available:
-                    await log_progress(f"Clonando a nota de referência: {ref_note}...", "running", client_id)
+                    # Wait for the note form to load. On the old layout this is
+                    # "Número da Nota" (by @placeholder); on the new layout (no
+                    # placeholders at all) it's "Número Documento Fiscal" (by id).
+                    note_input_sel = "xpath=//input[contains(@id, 'idDocumentoNumeroNotaFiscal') or (@placeholder='Número da Nota' and contains(@id, ':j_idt'))]"
+                    await page.wait_for_selector(note_input_sel, timeout=20000)
 
-                    # Try cloning (up to 3 attempts as in the user's script)
-                    for attempt in range(1, 4):
-                        try:
-                            # Re-locate field to avoid stale references
-                            note_input = await fill_first_visible(page, note_input_sel, str(ref_note), timeout_ms=10000)
-                            await page.wait_for_timeout(1000) # Wait state settle
+                    # The "Documento" section only exists on the new (2026-10)
+                    # layout and is mandatory there: a Documento type and a
+                    # Número Documento Fiscal. Per user instruction, always use
+                    # "Nota Fiscal de Serviços" and the increment of the last
+                    # emitted invoice number. Skipped entirely on the old layout,
+                    # which has no such section.
+                    doc_type_label = page.locator('[id="formNotaFiscal:idDocumentoDocumento_label"]').first
+                    if await doc_type_label.count() > 0:
+                        await log_progress(
+                            f"Preenchendo seção Documento (Nota Fiscal de Serviços nº {next_document_number})...",
+                            "running",
+                            client_id,
+                        )
+                        await doc_type_label.click()
+                        await page.wait_for_timeout(500)
+                        doc_type_option = page.locator(
+                            "xpath=//li[contains(@class,'ui-selectonemenu-item') and normalize-space()='Nota Fiscal de Serviços']"
+                        ).first
+                        await doc_type_option.click()
+                        await page.wait_for_timeout(500)
+
+                        doc_number_field = page.locator(note_input_sel).first
+                        await doc_number_field.click()
+                        await page.keyboard.press("Control+A")
+                        await page.keyboard.press("Backspace")
+                        await doc_number_field.press_sequentially(str(next_document_number), delay=40)
+                        await doc_number_field.press("Tab")
+                        await page.wait_for_timeout(300)
+                        # Persist immediately (not just increment in memory) so the
+                        # next run - even if this one crashes right after - never
+                        # reuses this number.
+                        doc_num_conn = get_db_connection()
+                        doc_num_conn.execute(
+                            "INSERT INTO system_config (key, value) VALUES ('nfse_last_document_number', ?) "
+                            "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                            (str(next_document_number),),
+                        )
+                        doc_num_conn.commit()
+                        doc_num_conn.close()
+                        next_document_number += 1
+
+                    # 4. Clone or fill from scratch
+                    cloned = False
+                    clonar_btn_sel = "xpath=//*[self::a or self::button][normalize-space()='Clonar' or .//span[normalize-space()='Clonar']]"
+                    clone_feature_available = await page.locator(clonar_btn_sel).count() > 0
+                    if ref_note and not clone_feature_available:
+                        await log_progress(
+                            "O portal não oferece mais a opção 'Clonar' nesta tela (mudou de layout). "
+                            "Preenchendo os dados manualmente em vez de clonar.",
+                            "warning",
+                            client_id,
+                        )
+                    if ref_note and clone_feature_available:
+                        await log_progress(f"Clonando a nota de referência: {ref_note}...", "running", client_id)
+
+                        # Try cloning (up to 3 attempts as in the user's script)
+                        for attempt in range(1, 4):
+                            try:
+                                # Re-locate field to avoid stale references
+                                note_input = await fill_first_visible(page, note_input_sel, str(ref_note), timeout_ms=10000)
+                                await page.wait_for_timeout(1000) # Wait state settle
                             
-                            # Click the search clone button. Avoid "Clonar Esta" from the last-issued-note panel.
-                            clonar_btn_sel = "xpath=//*[self::a or self::button][normalize-space()='Clonar' or .//span[normalize-space()='Clonar']]"
-                            await click_first_visible(page, clonar_btn_sel, timeout_ms=10000)
-                            await log_progress("Clonagem iniciada; aguardando retorno do portal...", "running", client_id)
-                            await page.wait_for_timeout(3000)
+                                # Click the search clone button. Avoid "Clonar Esta" from the last-issued-note panel.
+                                clonar_btn_sel = "xpath=//*[self::a or self::button][normalize-space()='Clonar' or .//span[normalize-space()='Clonar']]"
+                                await click_first_visible(page, clonar_btn_sel, timeout_ms=10000)
+                                await log_progress("Clonagem iniciada; aguardando retorno do portal...", "running", client_id)
+                                await page.wait_for_timeout(3000)
                             
-                            # Check for "nota não encontrada" error
-                            toast_err = page.locator("text=A nota informada não foi encontrada")
-                            if await toast_err.count() > 0 and await toast_err.is_visible():
-                                await log_progress(f"Erro: Nota de referência {ref_note} não encontrada.", "error", client_id)
-                                break
+                                # Check for "nota não encontrada" error
+                                toast_err = page.locator("text=A nota informada não foi encontrada")
+                                if await toast_err.count() > 0 and await toast_err.is_visible():
+                                    await log_progress(f"Erro: Nota de referência {ref_note} não encontrada.", "error", client_id)
+                                    break
                                 
-                            cloned = True
-                            await log_progress("Nota clonada. Seguindo sem tentar clonar novamente.", "success", client_id)
-                            break
-                        except Exception as e:
-                            await log_progress(f"Tentativa de clone {attempt}/3 falhou: {str(e)}", "warning", client_id)
-                            await page.wait_for_timeout(2000)
+                                cloned = True
+                                await log_progress("Nota clonada. Seguindo sem tentar clonar novamente.", "success", client_id)
+                                break
+                            except Exception as e:
+                                await log_progress(f"Tentativa de clone {attempt}/3 falhou: {str(e)}", "warning", client_id)
+                                await page.wait_for_timeout(2000)
                 
-                if not cloned:
-                    if ref_note:
-                        await log_progress("Falha ao clonar nota de referência. Tentando preencher dados manualmente...", "warning", client_id)
-                    else:
-                        await log_progress("Cliente sem nota de referência. Preenchendo dados manualmente...", "running", client_id)
+                    if not cloned:
+                        if ref_note:
+                            await log_progress("Falha ao clonar nota de referência. Tentando preencher dados manualmente...", "warning", client_id)
+                        else:
+                            await log_progress("Cliente sem nota de referência. Preenchendo dados manualmente...", "running", client_id)
                     
-                    # Wait for form/widget initialization
-                    await page.wait_for_timeout(3000)
+                        # Wait for form/widget initialization
+                        await page.wait_for_timeout(3000)
                     
-                    # Select Atividade do cadastro econômico (CNAE/Serviço) first
-                    await log_progress("Selecionando atividade econômica (620400001 - Consultoria em TI)...", "running", client_id)
-                    activity_result = await select_economic_activity(page, "620400001", timeout_ms=20000)
-                    already_selected = " já estava selecionada" if activity_result.get("alreadySelected") else ""
-                    await log_progress(f"Atividade econômica{already_selected}: {activity_result.get('text')}", "success", client_id)
-                    complement_result = await close_optional_complement_dialog(page, timeout_ms=5000)
-                    if complement_result.get("closed"):
-                        await log_progress("Popup opcional de complemento fechada para continuar a emissão.", "info", client_id)
+                        # Select Atividade do cadastro econômico (CNAE/Serviço) first
+                        await log_progress("Selecionando atividade econômica (620400001 - Consultoria em TI)...", "running", client_id)
                         activity_result = await select_economic_activity(page, "620400001", timeout_ms=20000)
-                        await log_progress(f"Atividade econômica confirmada após fechar complemento: {activity_result.get('text')}", "success", client_id)
-                    
-                    await page.wait_for_timeout(3000) # Wait for AJAX reload of taxation
-                    
-                    # Fill CNPJ/CPF of tomador second
-                    cnpj_field_sel = 'xpath=//input[contains(@id, "CpfCnpj") or contains(@name, "CpfCnpj")]'
-                    cnpj_field = await first_visible_locator(page, cnpj_field_sel, timeout_ms=10000, require_enabled=True)
-                    await cnpj_field.click()
-                    # Clear it first using focus and select_all
-                    await page.keyboard.press("Control+A")
-                    await page.keyboard.press("Backspace")
-                    # Type the CNPJ character by character
-                    await cnpj_field.press_sequentially(client_cnpj, delay=100)
-                    await page.wait_for_timeout(500)
-                    await cnpj_field.press("Tab")
-                    
-                    # Manually dispatch events to force PrimeFaces/jQuery autocomplete & AJAX triggers
-                    await page.evaluate("""
-                        (el) => {
-                            if (el) {
-                                el.dispatchEvent(new Event('input', { bubbles: true }));
-                                el.dispatchEvent(new Event('change', { bubbles: true }));
-                                el.dispatchEvent(new Event('blur', { bubbles: true }));
-                            }
-                        }
-                    """, cnpj_field)
-                    
-                    await page.wait_for_timeout(1000)
-                    
-
-                    # Click the "Pesquisar" button next to CNPJ field
-                    await log_progress("Acionando botão de pesquisa do Tomador...", "running", client_id)
-                    search_selectors = [
-                        "xpath=//*[self::button or self::a][contains(@id, 'pesquisar') or contains(@id, 'Pesquisar') or contains(., 'Pesquisar')]",
-                        "xpath=//*[contains(@id, 'tomador') or contains(@class, 'tomador') or contains(., 'Tomador')]//*[self::button or self::a][contains(., 'Pesquisar') or contains(., 'Pesq')]",
-                        "xpath=//*[self::button or self::a][contains(., 'Pesquisar')]",
-                        "xpath=//*[self::button or self::a][contains(., 'Pesq')]"
-                    ]
-                    clicked_search = False
-                    for sel in search_selectors:
-                        try:
-                            loc = page.locator(sel)
-                            if await loc.count() > 0:
-                                for index in range(await loc.count()):
-                                    item = loc.nth(index)
-                                    if await item.is_visible():
-                                        btn_text = (await item.inner_text()).strip()
-                                        # Skip menu button
-                                        if btn_text.lower() == "menu":
-                                            continue
-                                        await log_progress(f"Clicando no botão de pesquisa do Tomador: '{btn_text}'", "running", client_id)
-                                        await item.click()
-                                        clicked_search = True
-                                        break
-                                if clicked_search:
-                                    break
-                        except Exception:
-                            continue
-                            
-                    if clicked_search:
-                        await log_progress("Botão de pesquisa do Tomador clicado com sucesso.", "success", client_id)
-                    else:
-                        await log_progress("Alerta: não consegui localizar o botão de pesquisa do tomador.", "warning", client_id)
-                        
-                    await page.wait_for_timeout(4000) # Wait for AJAX load of tomador details
-                    complement_result = await close_optional_complement_dialog(page, timeout_ms=3000)
-                    if complement_result.get("closed"):
-                        await log_progress("Popup opcional de complemento fechada após pesquisar o tomador.", "info", client_id)
-                    
-                    # Check if "Inserir" button is visible under Dados Cadastrais and click it to bind/add the tomador to the invoice
-                    inserir_selectors = [
-                        "xpath=//*[self::button or self::a][contains(normalize-space(.), 'Inserir') or contains(normalize-space(text()), 'Inserir')]",
-                        "xpath=//*[contains(@id, 'cadastrais') or contains(@id, 'cadastro') or contains(., 'Dados Cadastrais')]//*[self::button or self::a][contains(., 'Inserir')]",
-                        "xpath=//*[self::button or self::a][contains(., 'Inserir')]"
-                    ]
-                    clicked_inserir = False
-                    for sel in inserir_selectors:
-                        try:
-                            loc = page.locator(sel)
-                            if await loc.count() > 0:
-                                for index in range(await loc.count()):
-                                    item = loc.nth(index)
-                                    if await item.is_visible():
-                                        await log_progress("Botão 'Inserir' do Tomador detectado (tomador de fora). Vinculando tomador à nota...", "running", client_id)
-                                        await item.click()
-                                        await page.wait_for_timeout(3000) # Wait for AJAX load of tomador association
-                                        clicked_inserir = True
-                                        break
-                                if clicked_inserir:
-                                    break
-                        except Exception:
-                            continue
-                            
-                    if clicked_inserir:
-                        await log_progress("Tomador de fora vinculado com sucesso.", "success", client_id)
+                        already_selected = " já estava selecionada" if activity_result.get("alreadySelected") else ""
+                        await log_progress(f"Atividade econômica{already_selected}: {activity_result.get('text')}", "success", client_id)
                         complement_result = await close_optional_complement_dialog(page, timeout_ms=5000)
                         if complement_result.get("closed"):
-                            await log_progress("Popup opcional de complemento fechada após vincular o tomador.", "info", client_id)
-
-                    await log_progress("Conferindo atividade econômica após carregar/vincular o tomador...", "running", client_id)
-                    activity_result = await select_economic_activity(page, "620400001", timeout_ms=20000)
-                    already_selected = " permaneceu selecionada" if activity_result.get("alreadySelected") else " foi reaplicada"
-                    await log_progress(f"Atividade econômica{already_selected}: {activity_result.get('text')}", "success", client_id)
-                    complement_result = await close_optional_complement_dialog(page, timeout_ms=3000)
-                    if complement_result.get("closed"):
-                        await log_progress("Popup opcional de complemento fechada após reconferir a atividade.", "info", client_id)
-                        activity_result = await select_economic_activity(page, "620400001", timeout_ms=20000)
-                        await log_progress(f"Atividade econômica confirmada novamente: {activity_result.get('text')}", "success", client_id)
-                        
-                    # Wait for AJAX reload of taxation details (when Alíquota and Valor ISS exit the '*****' loading state)
-                    await log_progress("Aguardando o portal calcular as alíquotas (saindo do estado '*****')...", "running", client_id)
-                    aliquota_sel = "xpath=(//*[contains(normalize-space(.), 'Alíquota')]/following::input)[1]"
+                            await log_progress("Popup opcional de complemento fechada para continuar a emissão.", "info", client_id)
+                            activity_result = await select_economic_activity(page, "620400001", timeout_ms=20000)
+                            await log_progress(f"Atividade econômica confirmada após fechar complemento: {activity_result.get('text')}", "success", client_id)
                     
-                    aliquota_loaded = False
-                    for attempt in range(15): # Wait up to 15 seconds
-                        try:
-                            val = await page.locator(aliquota_sel).first.input_value()
-                            if val and "*****" not in val:
-                                await log_progress(f"Alíquotas carregadas com sucesso: {val}", "success", client_id)
-                                aliquota_loaded = True
-                                break
-                        except Exception:
-                            pass
-                        await page.wait_for_timeout(1000)
-                        
-                    if not aliquota_loaded:
-                        await log_progress("Aviso: tempo esgotado aguardando carregamento das alíquotas. Prosseguindo...", "warning", client_id)
-
-
-
-
-
-
+                        await page.wait_for_timeout(3000) # Wait for AJAX reload of taxation
                     
-                # 5. Pre-fill note details
-                await log_progress(f"Ajustando competência da nota para {competence_str}...", "running", client_id)
-                _, applied_competence = await fill_competence_field(page, comp_info, timeout_ms=30000)
-                if applied_competence:
-                    await log_progress(f"Competência aplicada no portal: {applied_competence}", "success", client_id)
-                else:
-                    await log_progress("Não encontrei um campo editável de competência no formulário; seguindo sem alterar esse campo.", "warning", client_id)
-
-                if not cloned:
-                    await log_progress("Revalidando atividade econômica antes de preencher os dados finais da nota...", "running", client_id)
-                    activity_result = await select_economic_activity(page, "620400001", timeout_ms=20000)
-                    already_selected = " confirmada" if activity_result.get("alreadySelected") else " reaplicada"
-                    await log_progress(f"Atividade econômica{already_selected}: {activity_result.get('text')}", "success", client_id)
-                    complement_result = await close_optional_complement_dialog(page, timeout_ms=3000)
-                    if complement_result.get("closed"):
-                        await log_progress("Popup opcional de complemento fechada antes dos dados finais.", "info", client_id)
-                        activity_result = await select_economic_activity(page, "620400001", timeout_ms=20000)
-                        await log_progress(f"Atividade econômica confirmada para emissão: {activity_result.get('text')}", "success", client_id)
-
-                await log_progress("Preenchendo descrição da nota...", "running", client_id)
-
-                # Fill Descrição Nota Fiscal. In cloned notes the service value is
-                # kept from the reference note and must not be changed.
-                if cloned:
-                    await log_progress("Aguardando a tela da nota clonada carregar...", "running", client_id)
-                    try:
-                        # Wait up to 8 seconds to see if description field is already visible (already unlocked)
-                        await find_description_field(page, timeout_ms=8000)
-                    except Exception:
-                        # If description is not loaded, search for Tomador by CNPJ to unlock the form
-                        await log_progress("Campos de serviço não carregados automaticamente após clonagem. Efetuando pesquisa do Tomador para desbloquear...", "warning", client_id)
-                        
-                        # Fill CNPJ/CPF of tomador
+                        # Fill CNPJ/CPF of tomador second
                         cnpj_field_sel = 'xpath=//input[contains(@id, "CpfCnpj") or contains(@name, "CpfCnpj")]'
                         cnpj_field = await first_visible_locator(page, cnpj_field_sel, timeout_ms=10000, require_enabled=True)
-                        cnpj_id = await cnpj_field.get_attribute("id")
-                        client_cnpj_formatted = client["cnpj_cpf"] # formatted value e.g. "60.993.193/0001-50"
-                        
-                        await log_progress(f"Preenchendo CNPJ/CPF do Tomador: {client_cnpj_formatted}", "running", client_id)
+                        await cnpj_field.click()
+                        # Clear it first using focus and select_all
+                        await page.keyboard.press("Control+A")
+                        await page.keyboard.press("Backspace")
+                        # Type the CNPJ character by character
+                        await cnpj_field.press_sequentially(client_cnpj, delay=100)
+                        await page.wait_for_timeout(500)
+                        await cnpj_field.press("Tab")
+                    
+                        # Manually dispatch events to force PrimeFaces/jQuery autocomplete & AJAX triggers
                         await page.evaluate("""
-                            (args) => {
-                                const el = document.getElementById(args.id);
+                            (el) => {
                                 if (el) {
-                                    el.value = args.val;
                                     el.dispatchEvent(new Event('input', { bubbles: true }));
                                     el.dispatchEvent(new Event('change', { bubbles: true }));
                                     el.dispatchEvent(new Event('blur', { bubbles: true }));
                                 }
                             }
-                        """, {"id": cnpj_id, "val": client_cnpj_formatted})
+                        """, cnpj_field)
+                    
                         await page.wait_for_timeout(1000)
-                        
+                    
+
                         # Click the "Pesquisar" button next to CNPJ field
                         await log_progress("Acionando botão de pesquisa do Tomador...", "running", client_id)
-                        search_btn_sel = "xpath=//a[contains(@id, 'formNotaFiscal:') and contains(normalize-space(.), 'Pesquisar')]"
-                        try:
-                            btn_locator = page.locator(search_btn_sel).first
-                            await btn_locator.wait_for(state="visible", timeout=8000)
-                            await btn_locator.evaluate("(el) => el.click()")
-                            await log_progress("Botão de pesquisa do Tomador clicado via JS.", "running", client_id)
-                        except Exception as search_click_exc:
-                            await log_progress(f"Falha ao clicar no botão de pesquisa via seletor específico: {search_click_exc}. Tentando fallback...", "warning", client_id)
-                            search_selectors = [
-                                "xpath=//*[self::button or self::a][contains(@id, 'pesquisar') or contains(@id, 'Pesquisar') or contains(., 'Pesquisar')]",
-                                "xpath=//*[contains(@id, 'tomador') or contains(@class, 'tomador') or contains(., 'Tomador')]//*[self::button or self::a][contains(., 'Pesquisar') or contains(., 'Pesq')]",
-                                "xpath=//*[self::button or self::a][contains(., 'Pesquisar')]",
-                                "xpath=//*[self::button or self::a][contains(., 'Pesq')]"
-                            ]
-                            clicked_search = False
-                            for sel in search_selectors:
-                                try:
-                                    loc = page.locator(sel)
-                                    if await loc.count() > 0:
-                                        for index in range(await loc.count()):
-                                            item = loc.nth(index)
-                                            if await item.is_visible():
-                                                btn_text = (await item.inner_text()).strip()
-                                                if btn_text.lower() == "menu":
-                                                    continue
-                                                await log_progress(f"Clicando no botão de pesquisa do Tomador (fallback): '{btn_text}'", "running", client_id)
-                                                await item.evaluate("(el) => el.click()")
-                                                clicked_search = True
-                                                break
-                                        if clicked_search:
-                                            break
-                                except Exception:
-                                    pass
-                        
-                        await page.wait_for_timeout(3000)
-                        
-                        # Wait for description field again
-                        try:
-                            await find_description_field(page, timeout_ms=30000)
-                        except Exception as e:
+                        search_selectors = [
+                            "xpath=//*[self::button or self::a][contains(@id, 'pesquisar') or contains(@id, 'Pesquisar') or contains(., 'Pesquisar')]",
+                            "xpath=//*[contains(@id, 'tomador') or contains(@class, 'tomador') or contains(., 'Tomador')]//*[self::button or self::a][contains(., 'Pesquisar') or contains(., 'Pesq')]",
+                            "xpath=//*[self::button or self::a][contains(., 'Pesquisar')]",
+                            "xpath=//*[self::button or self::a][contains(., 'Pesq')]"
+                        ]
+                        clicked_search = False
+                        for sel in search_selectors:
                             try:
-                                dom = await page.content()
-                                with open("C:/Projetos/campinas-nfse-automator/campinas_dom.html", "w", encoding="utf-8") as f:
-                                    f.write(dom)
-                                print("[CAMPINAS INFO] DOM da tela de emissão salvo em campinas_dom.html!")
-                            except Exception as dom_exc:
-                                print(f"[CAMPINAS WARNING] Falha ao salvar DOM da página: {dom_exc}")
-                            raise e
-                desc_field = await fill_description(page, desc_text, timeout_ms=30000)
-                await desc_field.press("Tab")
-                await page.wait_for_timeout(1000)
+                                loc = page.locator(sel)
+                                if await loc.count() > 0:
+                                    for index in range(await loc.count()):
+                                        item = loc.nth(index)
+                                        if await item.is_visible():
+                                            btn_text = (await item.inner_text()).strip()
+                                            # Skip menu button
+                                            if btn_text.lower() == "menu":
+                                                continue
+                                            await log_progress(f"Clicando no botão de pesquisa do Tomador: '{btn_text}'", "running", client_id)
+                                            await item.click()
+                                            clicked_search = True
+                                            break
+                                    if clicked_search:
+                                        break
+                            except Exception:
+                                continue
+                            
+                        if clicked_search:
+                            await log_progress("Botão de pesquisa do Tomador clicado com sucesso.", "success", client_id)
+                        else:
+                            await log_progress("Alerta: não consegui localizar o botão de pesquisa do tomador.", "warning", client_id)
+                        
+                        await page.wait_for_timeout(4000) # Wait for AJAX load of tomador details
+                        complement_result = await close_optional_complement_dialog(page, timeout_ms=3000)
+                        if complement_result.get("closed"):
+                            await log_progress("Popup opcional de complemento fechada após pesquisar o tomador.", "info", client_id)
+                    
+                        # Check if "Inserir" button is visible under Dados Cadastrais and click it to bind/add the tomador to the invoice
+                        inserir_selectors = [
+                            "xpath=//*[self::button or self::a][contains(normalize-space(.), 'Inserir') or contains(normalize-space(text()), 'Inserir')]",
+                            "xpath=//*[contains(@id, 'cadastrais') or contains(@id, 'cadastro') or contains(., 'Dados Cadastrais')]//*[self::button or self::a][contains(., 'Inserir')]",
+                            "xpath=//*[self::button or self::a][contains(., 'Inserir')]"
+                        ]
+                        clicked_inserir = False
+                        for sel in inserir_selectors:
+                            try:
+                                loc = page.locator(sel)
+                                if await loc.count() > 0:
+                                    for index in range(await loc.count()):
+                                        item = loc.nth(index)
+                                        if await item.is_visible():
+                                            await log_progress("Botão 'Inserir' do Tomador detectado (tomador de fora). Vinculando tomador à nota...", "running", client_id)
+                                            await item.click()
+                                            await page.wait_for_timeout(3000) # Wait for AJAX load of tomador association
+                                            clicked_inserir = True
+                                            break
+                                    if clicked_inserir:
+                                        break
+                            except Exception:
+                                continue
+                            
+                        if clicked_inserir:
+                            await log_progress("Tomador de fora vinculado com sucesso.", "success", client_id)
+                            complement_result = await close_optional_complement_dialog(page, timeout_ms=5000)
+                            if complement_result.get("closed"):
+                                await log_progress("Popup opcional de complemento fechada após vincular o tomador.", "info", client_id)
 
-                if cloned:
-                    await log_progress("Nota clonada: mantendo Valor dos Serviços original da referência.", "info", client_id)
-                else:
-                    await log_progress("Preenchendo Valor dos Serviços...", "running", client_id)
-                    value_result = await fill_invoice_service_value(page, value_br, timeout_ms=15000)
-                    await log_progress(
-                        f"Valor dos Serviços confirmado no portal: {value_result.get('value')}",
-                        "success",
-                        client_id
-                    )
-                    await log_progress("Aguardando recálculo do ISSQN após informar o valor...", "running", client_id)
-                    tax_snapshot = await wait_tax_calculation_ready(page, timeout_ms=30000)
-                    await log_progress(
-                        f"Cálculo do ISSQN concluído: {', '.join(tax_snapshot.get('values') or [])}",
-                        "success",
-                        client_id
-                    )
+                        await log_progress("Conferindo atividade econômica após carregar/vincular o tomador...", "running", client_id)
+                        activity_result = await select_economic_activity(page, "620400001", timeout_ms=20000)
+                        already_selected = " permaneceu selecionada" if activity_result.get("alreadySelected") else " foi reaplicada"
+                        await log_progress(f"Atividade econômica{already_selected}: {activity_result.get('text')}", "success", client_id)
+                        complement_result = await close_optional_complement_dialog(page, timeout_ms=3000)
+                        if complement_result.get("closed"):
+                            await log_progress("Popup opcional de complemento fechada após reconferir a atividade.", "info", client_id)
+                            activity_result = await select_economic_activity(page, "620400001", timeout_ms=20000)
+                            await log_progress(f"Atividade econômica confirmada novamente: {activity_result.get('text')}", "success", client_id)
+                        
+                        # Wait for AJAX reload of taxation details (when Alíquota and Valor ISS exit the '*****' loading state)
+                        await log_progress("Aguardando o portal calcular as alíquotas (saindo do estado '*****')...", "running", client_id)
+                        aliquota_sel = "xpath=(//*[contains(normalize-space(.), 'Alíquota')]/following::input)[1]"
+                    
+                        aliquota_loaded = False
+                        for attempt in range(15): # Wait up to 15 seconds
+                            try:
+                                val = await page.locator(aliquota_sel).first.input_value()
+                                if val and "*****" not in val:
+                                    await log_progress(f"Alíquotas carregadas com sucesso: {val}", "success", client_id)
+                                    aliquota_loaded = True
+                                    break
+                            except Exception:
+                                pass
+                            await page.wait_for_timeout(1000)
+                        
+                        if not aliquota_loaded:
+                            await log_progress("Aviso: tempo esgotado aguardando carregamento das alíquotas. Prosseguindo...", "warning", client_id)
 
-                if VALIDATION_ONLY:
-                    await log_progress("Modo validação ativo: NÃO vou clicar em Emitir Nota Fiscal.", "warning", client_id)
-                    await log_progress(f"Descrição aplicada a partir do template cadastrado: {desc_text}", "info", client_id)
 
-                    validation_screenshot = os.path.join(
-                        screenshot_folder,
-                        f"{slugify_name(client_name)}_validacao_descricao.png"
-                    )
-                    try:
-                        await page.screenshot(path=validation_screenshot, full_page=True)
-                        await log_progress(f"Screenshot para conferência salvo em: {validation_screenshot}", "success", client_id)
-                    except Exception as se:
-                        await log_progress(f"Não consegui salvar screenshot de validação: {se}", "warning", client_id)
-                        validation_screenshot = None
 
-                    conn = get_db_connection()
-                    cursor = conn.cursor()
-                    cursor.execute("""
-                    INSERT INTO emissions (client_id, competence, status, error_message, screenshot_path, timestamp)
-                    VALUES (?, ?, ?, ?, ?, datetime('now'))
-                    """, (
-                        client_id,
-                        competence_str,
-                        "pendente",
-                        "Validação manual: descrição preenchida, emissão não executada.",
-                        validation_screenshot
-                    ))
-                    conn.commit()
-                    conn.close()
 
-                    await log_progress(f"A janela ficará aberta por {VALIDATION_PAUSE_SECONDS // 60} minutos para validação manual. Feche o navegador se terminar antes.", "warning", client_id)
-                    await page.wait_for_timeout(VALIDATION_PAUSE_SECONDS * 1000)
-                    break
+
+
+                    
+                    # 5. Pre-fill note details
+                    await log_progress(f"Ajustando competência da nota para {competence_str}...", "running", client_id)
+                    _, applied_competence = await fill_competence_field(page, comp_info, timeout_ms=30000)
+                    if applied_competence:
+                        await log_progress(f"Competência aplicada no portal: {applied_competence}", "success", client_id)
+                    else:
+                        await log_progress("Não encontrei um campo editável de competência no formulário; seguindo sem alterar esse campo.", "warning", client_id)
+
+                    if not cloned:
+                        await log_progress("Revalidando atividade econômica antes de preencher os dados finais da nota...", "running", client_id)
+                        activity_result = await select_economic_activity(page, "620400001", timeout_ms=20000)
+                        already_selected = " confirmada" if activity_result.get("alreadySelected") else " reaplicada"
+                        await log_progress(f"Atividade econômica{already_selected}: {activity_result.get('text')}", "success", client_id)
+                        complement_result = await close_optional_complement_dialog(page, timeout_ms=3000)
+                        if complement_result.get("closed"):
+                            await log_progress("Popup opcional de complemento fechada antes dos dados finais.", "info", client_id)
+                            activity_result = await select_economic_activity(page, "620400001", timeout_ms=20000)
+                            await log_progress(f"Atividade econômica confirmada para emissão: {activity_result.get('text')}", "success", client_id)
+
+                    await log_progress("Preenchendo descrição da nota...", "running", client_id)
+
+                    # Fill Descrição Nota Fiscal. In cloned notes the service value is
+                    # kept from the reference note and must not be changed.
+                    if cloned:
+                        await log_progress("Aguardando a tela da nota clonada carregar...", "running", client_id)
+                        try:
+                            # Wait up to 8 seconds to see if description field is already visible (already unlocked)
+                            await find_description_field(page, timeout_ms=8000)
+                        except Exception:
+                            # If description is not loaded, search for Tomador by CNPJ to unlock the form
+                            await log_progress("Campos de serviço não carregados automaticamente após clonagem. Efetuando pesquisa do Tomador para desbloquear...", "warning", client_id)
+                        
+                            # Fill CNPJ/CPF of tomador
+                            cnpj_field_sel = 'xpath=//input[contains(@id, "CpfCnpj") or contains(@name, "CpfCnpj")]'
+                            cnpj_field = await first_visible_locator(page, cnpj_field_sel, timeout_ms=10000, require_enabled=True)
+                            cnpj_id = await cnpj_field.get_attribute("id")
+                            client_cnpj_formatted = client["cnpj_cpf"] # formatted value e.g. "60.993.193/0001-50"
+                        
+                            await log_progress(f"Preenchendo CNPJ/CPF do Tomador: {client_cnpj_formatted}", "running", client_id)
+                            await page.evaluate("""
+                                (args) => {
+                                    const el = document.getElementById(args.id);
+                                    if (el) {
+                                        el.value = args.val;
+                                        el.dispatchEvent(new Event('input', { bubbles: true }));
+                                        el.dispatchEvent(new Event('change', { bubbles: true }));
+                                        el.dispatchEvent(new Event('blur', { bubbles: true }));
+                                    }
+                                }
+                            """, {"id": cnpj_id, "val": client_cnpj_formatted})
+                            await page.wait_for_timeout(1000)
+                        
+                            # Click the "Pesquisar" button next to CNPJ field
+                            await log_progress("Acionando botão de pesquisa do Tomador...", "running", client_id)
+                            search_btn_sel = "xpath=//a[contains(@id, 'formNotaFiscal:') and contains(normalize-space(.), 'Pesquisar')]"
+                            try:
+                                btn_locator = page.locator(search_btn_sel).first
+                                await btn_locator.wait_for(state="visible", timeout=8000)
+                                await btn_locator.evaluate("(el) => el.click()")
+                                await log_progress("Botão de pesquisa do Tomador clicado via JS.", "running", client_id)
+                            except Exception as search_click_exc:
+                                await log_progress(f"Falha ao clicar no botão de pesquisa via seletor específico: {search_click_exc}. Tentando fallback...", "warning", client_id)
+                                search_selectors = [
+                                    "xpath=//*[self::button or self::a][contains(@id, 'pesquisar') or contains(@id, 'Pesquisar') or contains(., 'Pesquisar')]",
+                                    "xpath=//*[contains(@id, 'tomador') or contains(@class, 'tomador') or contains(., 'Tomador')]//*[self::button or self::a][contains(., 'Pesquisar') or contains(., 'Pesq')]",
+                                    "xpath=//*[self::button or self::a][contains(., 'Pesquisar')]",
+                                    "xpath=//*[self::button or self::a][contains(., 'Pesq')]"
+                                ]
+                                clicked_search = False
+                                for sel in search_selectors:
+                                    try:
+                                        loc = page.locator(sel)
+                                        if await loc.count() > 0:
+                                            for index in range(await loc.count()):
+                                                item = loc.nth(index)
+                                                if await item.is_visible():
+                                                    btn_text = (await item.inner_text()).strip()
+                                                    if btn_text.lower() == "menu":
+                                                        continue
+                                                    await log_progress(f"Clicando no botão de pesquisa do Tomador (fallback): '{btn_text}'", "running", client_id)
+                                                    await item.evaluate("(el) => el.click()")
+                                                    clicked_search = True
+                                                    break
+                                            if clicked_search:
+                                                break
+                                    except Exception:
+                                        pass
+                        
+                            await page.wait_for_timeout(3000)
+                        
+                            # Wait for description field again
+                            try:
+                                await find_description_field(page, timeout_ms=30000)
+                            except Exception as e:
+                                try:
+                                    dom = await page.content()
+                                    with open("C:/Projetos/campinas-nfse-automator/campinas_dom.html", "w", encoding="utf-8") as f:
+                                        f.write(dom)
+                                    print("[CAMPINAS INFO] DOM da tela de emissão salvo em campinas_dom.html!")
+                                except Exception as dom_exc:
+                                    print(f"[CAMPINAS WARNING] Falha ao salvar DOM da página: {dom_exc}")
+                                raise e
+                    desc_field = await fill_description(page, desc_text, timeout_ms=30000)
+                    await desc_field.press("Tab")
+                    await page.wait_for_timeout(1000)
+
+                    if cloned:
+                        await log_progress("Nota clonada: mantendo Valor dos Serviços original da referência.", "info", client_id)
+                    else:
+                        await log_progress("Preenchendo Valor dos Serviços...", "running", client_id)
+                        value_result = await fill_invoice_service_value(page, value_br, timeout_ms=15000)
+                        await log_progress(
+                            f"Valor dos Serviços confirmado no portal: {value_result.get('value')}",
+                            "success",
+                            client_id
+                        )
+                        await log_progress("Aguardando recálculo do ISSQN após informar o valor...", "running", client_id)
+                        tax_snapshot = await wait_tax_calculation_ready(page, timeout_ms=30000)
+                        await log_progress(
+                            f"Cálculo do ISSQN concluído: {', '.join(tax_snapshot.get('values') or [])}",
+                            "success",
+                            client_id
+                        )
+
+                    if VALIDATION_ONLY:
+                        await log_progress("Modo validação ativo: NÃO vou clicar em Emitir Nota Fiscal.", "warning", client_id)
+                        await log_progress(f"Descrição aplicada a partir do template cadastrado: {desc_text}", "info", client_id)
+
+                        validation_screenshot = os.path.join(
+                            screenshot_folder,
+                            f"{slugify_name(client_name)}_validacao_descricao.png"
+                        )
+                        try:
+                            await page.screenshot(path=validation_screenshot, full_page=True)
+                            await log_progress(f"Screenshot para conferência salvo em: {validation_screenshot}", "success", client_id)
+                        except Exception as se:
+                            await log_progress(f"Não consegui salvar screenshot de validação: {se}", "warning", client_id)
+                            validation_screenshot = None
+
+                        conn = get_db_connection()
+                        cursor = conn.cursor()
+                        cursor.execute("""
+                        INSERT INTO emissions (client_id, competence, status, error_message, screenshot_path, timestamp)
+                        VALUES (?, ?, ?, ?, ?, datetime('now'))
+                        """, (
+                            client_id,
+                            competence_str,
+                            "pendente",
+                            "Validação manual: descrição preenchida, emissão não executada.",
+                            validation_screenshot
+                        ))
+                        conn.commit()
+                        conn.close()
+
+                        await log_progress(f"A janela ficará aberta por {VALIDATION_PAUSE_SECONDS // 60} minutos para validação manual. Feche o navegador se terminar antes.", "warning", client_id)
+                        await page.wait_for_timeout(VALIDATION_PAUSE_SECONDS * 1000)
+                        break
                 
-                # 6. Retentions Screen checks
-                await log_progress("Ajustando impostos retidos conforme o tipo de retenção...", "running", client_id)
+                    # 6. Retentions Screen checks
+                    await log_progress("Ajustando impostos retidos conforme o tipo de retenção...", "running", client_id)
                 
-                # Determine which taxes to zero out
-                taxes_to_zero = ["PIS", "INSS", "CSLL", "COFINS", "IR", "Outras"]
-                if retention_type == "Sem retenção":
-                    taxes_to_zero.extend(["ISS", "ISSQN"])
+                    # Determine which taxes to zero out
+                    taxes_to_zero = ["PIS", "INSS", "CSLL", "COFINS", "IR", "Outras"]
+                    if retention_type == "Sem retenção":
+                        taxes_to_zero.extend(["ISS", "ISSQN"])
 
-                zeroed_fields = await zero_retention_fields(page, taxes_to_zero)
-                if zeroed_fields:
-                    await log_progress(f"Retenções zeradas: {len(zeroed_fields)} campo(s) ajustado(s).", "success", client_id)
-                else:
-                    await log_progress("Retenções já estavam zeradas ou não havia campos editáveis para ajustar.", "info", client_id)
+                    zeroed_fields = await zero_retention_fields(page, taxes_to_zero)
+                    if zeroed_fields:
+                        await log_progress(f"Retenções zeradas: {len(zeroed_fields)} campo(s) ajustado(s).", "success", client_id)
+                    else:
+                        await log_progress("Retenções já estavam zeradas ou não havia campos editáveis para ajustar.", "info", client_id)
 
-                await page.wait_for_timeout(1000)
-                if not cloned:
-                    await log_progress("Conferindo valor e retenções antes de emitir...", "running", client_id)
-                    validation_snapshot = await validate_manual_invoice_values(page, value_br, taxes_to_zero)
-                    await log_progress(
-                        f"Conferência final OK: Valor dos Serviços {validation_snapshot.get('serviceValue')} e retenções zeradas.",
-                        "success",
-                        client_id
-                    )
+                    await page.wait_for_timeout(1000)
+                    if not cloned:
+                        await log_progress("Conferindo valor e retenções antes de emitir...", "running", client_id)
+                        validation_snapshot = await validate_manual_invoice_values(page, value_br, taxes_to_zero)
+                        await log_progress(
+                            f"Conferência final OK: Valor dos Serviços {validation_snapshot.get('serviceValue')} e retenções zeradas.",
+                            "success",
+                            client_id
+                        )
                 
+                if dry_run:
+                    await log_progress("Simulação concluída: formulário preenchido até a revisão final. NÃO cliquei em emitir.", "success", client_id)
+                    await page.wait_for_timeout(dry_run_pause_seconds * 1000)
+                    continue
+
                 # 7. Click Emitir Nota Fiscal
                 await log_progress("Clicando em Emitir Nota Fiscal...", "running", client_id)
                 emit_pdf_future = asyncio.create_task(capture_pdf_response_bytes(context, timeout_ms=30000))
-                await click_emit_invoice_button(page)
+                if is_wizard:
+                    await click_new_emissor_emit_button(page)
+                else:
+                    await click_emit_invoice_button(page)
 
                 # The portal may reject the submission with a validation
                 # banner (e.g. a required field left empty) instead of
@@ -2462,15 +2991,16 @@ async def run_nfse_automation(client_ids, ref_date=None, progress_callback=None)
                 error_msg = f"Erro na automação: {str(e)}\n{traceback.format_exc()}"
                 await log_progress(f"Erro ao processar cliente {client_name}: {str(e)}", "error", client_id)
                 
-                # Log Failure in SQLite
-                conn = get_db_connection()
-                cursor = conn.cursor()
-                cursor.execute("""
-                INSERT INTO emissions (client_id, competence, status, error_message, screenshot_path, timestamp)
-                VALUES (?, ?, ?, ?, ?, datetime('now'))
-                """, (client_id, competence_str, "erro", str(e), screenshot_path))
-                conn.commit()
-                conn.close()
+                # Log Failure in SQLite (a dry run leaves no history behind)
+                if not dry_run:
+                    conn = get_db_connection()
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                    INSERT INTO emissions (client_id, competence, status, error_message, screenshot_path, timestamp)
+                    VALUES (?, ?, ?, ?, ?, datetime('now'))
+                    """, (client_id, competence_str, "erro", str(e), screenshot_path))
+                    conn.commit()
+                    conn.close()
                 
                 # Go back or refresh portal state to prepare for next client
                 try:
@@ -2536,7 +3066,7 @@ async def recover_nfse_pdf(client_id, invoice_number, ref_date=None, progress_ca
                 args=["--start-maximized", "--disable-notifications", "--disable-popup-blocking"]
             )
             context = await browser.new_context(
-                viewport={"width": 1920, "height": 1080} if not headless else None
+                **({"viewport": {"width": 1920, "height": 1080}} if headless else {"no_viewport": True})
             )
             page = await context.new_page()
 
