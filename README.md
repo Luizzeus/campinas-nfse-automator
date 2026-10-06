@@ -79,6 +79,28 @@ Para iniciar manualmente:
 
 ---
 
+## 🧾 Novo Emissor (padrão nacional, 10/2026)
+
+A emissão usa por padrão o **Novo Emissor Ajustado ao Padrão Nacional** do portal (assistente de 5 etapas: Pessoas, Serviço, Valores, Informações Complementares e Emitir NFS-e). Os valores abaixo podem ser sobrescritos na tabela `system_config`:
+
+| Chave | Padrão |
+| --- | --- |
+| `nfse_emissor_model` | `novo` (`atual` volta ao emissor antigo enquanto o portal o oferecer) |
+| `nfse_codigo_tributacao_nacional` | `01.06.01` |
+| `nfse_codigo_complementar_municipal` | `01.06.01.001` |
+| `nfse_item_nbs` | `1.1510.00.00` |
+| `nfse_indicador_operacao` | `100301` |
+| `nfse_situacao_pis_cofins` | `Nenhum` |
+| `nfse_tipo_retencao_pis_cofins_csll` | `PIS/COFINS/CSLL Não Retidos` |
+| `nfse_classificacao_tributaria` | `000001` |
+
+Para simular sem emitir (preenche até a revisão final de um cliente):
+```bash
+python diag_novo_emissor.py 12
+```
+
+---
+
 ## 🔒 Segurança
 
 O arquivo do banco de dados `database.db` e as pastas locais `invoices/`, `reports/` e `screenshots/` estão incluídos no arquivo `.gitignore` para evitar que credenciais e informações sigilosas dos clientes sejam comitados publicamente.
